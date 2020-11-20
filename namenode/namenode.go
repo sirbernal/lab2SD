@@ -18,7 +18,7 @@ func (s *server) Upload(stream pb.ClientService_UploadServer) error {
 		return err
 	}
 
-	fmt.Println(req.IdLibro)
+	fmt.Println(req.Chunk)
 	rsp := &pb.UploadResponse{IdLibro : "recibido", }
 	stream.Send(rsp)
 	return nil
