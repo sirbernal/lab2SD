@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package client_service;
+
+option go_package = "client_service;proto";
+
+message UploadRequest {
+    string id_libro = 1;
+
+}
+ 
+message UploadResponse {
+    string id_libro = 1;
+
+}
+
+service ClientService {
+    rpc Upload (stream UploadRequest) returns (stream UploadResponse) {}
+}
