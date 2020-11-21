@@ -1,65 +1,82 @@
 package main
 
 import (
-	//"context"
+	"context"
 	"fmt"
-	//"log"
+	"log"
 	//"bufio"
-	//"io/ioutil"
+	"io"
 	"math"
 	"os"
 	//"strconv"
 
 
 
-	//pb "github.com/sirbernal/lab2SD/proto/client_service"
-	//"google.golang.org/grpc"
+	pb "github.com/sirbernal/lab2SD/proto/client_service"
+	"google.golang.org/grpc"
 )
+type ChunkAndN struct{
+	Chunk []byte
+	N int 
+}
 
 
-
-func main() {
-	//conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure(), grpc.WithBlock())
-	//fmt.Println("im fine")
-	/*if err != nil {
-		log.Fatalln(err)
-	}
-	defer conn.Close(= */
-
-	//client := pb.NewClientServiceClient(conn)
-
-	//stream, err := client.Upload(context.Background())
-
-	fileToBeChunked := "./ejemplo.pdf" // change here!
-
-	file, err := os.Open(fileToBeChunked)
-
+func Chunker(archivo string) []ChunkAndN{
+	file, err := os.Open(archivo)
 	if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+		fmt.Println(err)
+		os.Exit(1)
 	} 
-
 	defer file.Close()
-
+	var chunks []ChunkAndN
 	fileInfo, _ := file.Stat()
-
 	var fileSize int64 = fileInfo.Size()
-
-	const fileChunk = 256000 // 1 MB, change this to your requirement
-
-	// calculate total number of parts the file will be chunked into
-
+	const fileChunk = 256000
 	totalPartsNum := uint64(math.Ceil(float64(fileSize) / float64(fileChunk)))
-
-	fmt.Printf("Splitting to %d pieces.\n", totalPartsNum)
 	for i := uint64(0); i < totalPartsNum; i++ {
 
-			partSize := int(math.Min(fileChunk, float64(fileSize-int64(i*fileChunk))))
-			partBuffer := make([]byte, partSize)
+		partSize := int(math.Min(fileChunk, float64(fileSize-int64(i*fileChunk))))
+		partBuffer := make([]byte, partSize)
 
-			file.Read(partBuffer)
+		n,err :=file.Read(partBuffer)
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+				continue
+			}
+			return nil
+		}
+		chunks = append(chunks,ChunkAndN{partBuffer,n})
+		fmt.Println("Se creo y guardo un chunk")
+	}
+	file.Close()
+	return chunks
+}
 
-			fmt.Println("Se creo un chunk")
+func main() {
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure(), grpc.WithBlock())
+	fmt.Println("im fine")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer conn.Close()
+
+	client := pb.NewClientServiceClient(conn)
+
+	stream, err := client.Upload(context.Background())
+
+	chunks := Chunker("./ejemplo.pdf")
+	fmt.Println(len(chunks))
+	for _,chunk :=range chunks{
+		msg:= &pb.UploadRequest{Chunk: chunk.Chunk[:chunk.N]}
+		stream.Send(msg)
+		resp, err := stream.Recv()
+		if err != nil {
+			log.Fatalf("can not receive %v", err)
+		}
+		fmt.Println(resp.IdLibro) 
+	}
+
 			// write to disk
 			//fileName := "part_" + strconv.FormatUint(i, 10)
 			//_, err := os.Create(fileName)
@@ -75,9 +92,9 @@ func main() {
 			/*if err != nil {
 				log.Fatalf("can not receive %v", err)
 			}
-			fmt.Println(resp.IdLibro) */
+			fmt.Println(resp.IdLibro) 
 			// write/save buffer to disk
-	}
+	}*/
 
 
 
