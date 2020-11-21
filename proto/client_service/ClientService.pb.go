@@ -134,14 +134,14 @@ var file_proto_ClientService_proto_rawDesc = []byte{
 	0x6e, 0x6b, 0x22, 0x2b, 0x0a, 0x0e, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x52, 0x65, 0x73, 0x70,
 	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x19, 0x0a, 0x08, 0x69, 0x64, 0x5f, 0x6c, 0x69, 0x62, 0x72, 0x6f,
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x69, 0x64, 0x4c, 0x69, 0x62, 0x72, 0x6f, 0x32,
-	0x5e, 0x0a, 0x0d, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
-	0x12, 0x4d, 0x0a, 0x06, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x1d, 0x2e, 0x63, 0x6c, 0x69,
+	0x5a, 0x0a, 0x0d, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
+	0x12, 0x49, 0x0a, 0x06, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x1d, 0x2e, 0x63, 0x6c, 0x69,
 	0x65, 0x6e, 0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x55, 0x70, 0x6c, 0x6f,
 	0x61, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1e, 0x2e, 0x63, 0x6c, 0x69, 0x65,
 	0x6e, 0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x55, 0x70, 0x6c, 0x6f, 0x61,
-	0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x28, 0x01, 0x30, 0x01, 0x42,
-	0x16, 0x5a, 0x14, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63,
-	0x65, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x16, 0x5a, 0x14, 0x63,
+	0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x3b, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -234,7 +234,7 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ClientServiceClient interface {
-	Upload(ctx context.Context, opts ...grpc.CallOption) (ClientService_UploadClient, error)
+	Upload(ctx context.Context, in *UploadRequest, opts ...grpc.CallOption) (*UploadResponse, error)
 }
 
 type clientServiceClient struct {
@@ -245,91 +245,59 @@ func NewClientServiceClient(cc grpc.ClientConnInterface) ClientServiceClient {
 	return &clientServiceClient{cc}
 }
 
-func (c *clientServiceClient) Upload(ctx context.Context, opts ...grpc.CallOption) (ClientService_UploadClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_ClientService_serviceDesc.Streams[0], "/client_service.ClientService/Upload", opts...)
+func (c *clientServiceClient) Upload(ctx context.Context, in *UploadRequest, opts ...grpc.CallOption) (*UploadResponse, error) {
+	out := new(UploadResponse)
+	err := c.cc.Invoke(ctx, "/client_service.ClientService/Upload", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &clientServiceUploadClient{stream}
-	return x, nil
-}
-
-type ClientService_UploadClient interface {
-	Send(*UploadRequest) error
-	Recv() (*UploadResponse, error)
-	grpc.ClientStream
-}
-
-type clientServiceUploadClient struct {
-	grpc.ClientStream
-}
-
-func (x *clientServiceUploadClient) Send(m *UploadRequest) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *clientServiceUploadClient) Recv() (*UploadResponse, error) {
-	m := new(UploadResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // ClientServiceServer is the server API for ClientService service.
 type ClientServiceServer interface {
-	Upload(ClientService_UploadServer) error
+	Upload(context.Context, *UploadRequest) (*UploadResponse, error)
 }
 
 // UnimplementedClientServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedClientServiceServer struct {
 }
 
-func (*UnimplementedClientServiceServer) Upload(ClientService_UploadServer) error {
-	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
+func (*UnimplementedClientServiceServer) Upload(context.Context, *UploadRequest) (*UploadResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Upload not implemented")
 }
 
 func RegisterClientServiceServer(s *grpc.Server, srv ClientServiceServer) {
 	s.RegisterService(&_ClientService_serviceDesc, srv)
 }
 
-func _ClientService_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ClientServiceServer).Upload(&clientServiceUploadServer{stream})
-}
-
-type ClientService_UploadServer interface {
-	Send(*UploadResponse) error
-	Recv() (*UploadRequest, error)
-	grpc.ServerStream
-}
-
-type clientServiceUploadServer struct {
-	grpc.ServerStream
-}
-
-func (x *clientServiceUploadServer) Send(m *UploadResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *clientServiceUploadServer) Recv() (*UploadRequest, error) {
-	m := new(UploadRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _ClientService_Upload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadRequest)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(ClientServiceServer).Upload(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/client_service.ClientService/Upload",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientServiceServer).Upload(ctx, req.(*UploadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _ClientService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "client_service.ClientService",
 	HandlerType: (*ClientServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
+	Methods: []grpc.MethodDesc{
 		{
-			StreamName:    "Upload",
-			Handler:       _ClientService_Upload_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
+			MethodName: "Upload",
+			Handler:    _ClientService_Upload_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "proto/ClientService.proto",
 }

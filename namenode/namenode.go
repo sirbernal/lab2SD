@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"context"
 
 	pb "github.com/sirbernal/lab2SD/proto/client_service"
 	"google.golang.org/grpc"
@@ -12,16 +13,12 @@ import (
 type server struct {
 }
 
-func (s *server) Upload(stream pb.ClientService_UploadServer) error {
-	_, err := stream.Recv()
-	if err != nil {
-		return err
-	}
+func (s *server) Upload(ctx context.Context, msg *pb.UploadRequest) (*pb.UploadResponse, error) {
+
 
 	fmt.Println("Recibido")
-	rsp := &pb.UploadResponse{IdLibro : "recibido en el server", }
-	stream.Send(rsp)
-	return nil
+	//fmt.Println(msg.GetChunk())
+	return &pb.UploadResponse{IdLibro : "recibido en el server", }, nil
 	
 }
 

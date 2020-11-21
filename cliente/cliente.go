@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 	//"bufio"
 	"io"
 	"math"
@@ -54,8 +55,7 @@ func Chunker(archivo string) []ChunkAndN{
 }
 
 func main() {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure(), grpc.WithBlock())
-	fmt.Println("im fine")
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -63,18 +63,18 @@ func main() {
 
 	client := pb.NewClientServiceClient(conn)
 
-	stream, err := client.Upload(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
 
 	chunks := Chunker("./ejemplo.pdf")
 	fmt.Println(len(chunks))
 	for _,chunk :=range chunks{
 		msg:= &pb.UploadRequest{Chunk: chunk.Chunk[:chunk.N]}
-		stream.Send(msg)
-		resp, err := stream.Recv()
+		resp, err := client.Upload(ctx, msg)
 		if err != nil {
 			log.Fatalf("can not receive %v", err)
 		}
-		fmt.Println(resp.IdLibro) 
+		fmt.Println(resp.GetIdLibro()) 
 	}
 
 			// write to disk

@@ -15,5 +15,5 @@ message UploadResponse {
 }
 
 service ClientService {
-    rpc Upload (stream UploadRequest) returns (stream UploadResponse) {}
+    rpc Upload (UploadRequest) returns (UploadResponse) {}
 }
