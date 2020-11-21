@@ -13,13 +13,13 @@ type server struct {
 }
 
 func (s *server) Upload(stream pb.ClientService_UploadServer) error {
-	req, err := stream.Recv()
+	_, err := stream.Recv()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(req.Chunk)
-	rsp := &pb.UploadResponse{IdLibro : "recibido", }
+	fmt.Println("Recibido")
+	rsp := &pb.UploadResponse{IdLibro : "recibido en el server", }
 	stream.Send(rsp)
 	return nil
 	
