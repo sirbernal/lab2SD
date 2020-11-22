@@ -68,11 +68,14 @@ func main() {
 
 	chunks := Chunker("./ejemplo.pdf")
 	fmt.Println(len(chunks))
-	for _,chunk :=range chunks{
+	for i,chunk :=range chunks{
 		msg:= &pb.UploadRequest{Chunk: chunk.Chunk[:chunk.N]}
 		resp, err := client.Upload(ctx, msg)
 		if err != nil {
 			log.Fatalf("can not receive %v", err)
+		}
+		if i==(len(chunks)-1){
+			fmt.Println("aqui avisa q mando todo al namenode y manda el len")
 		}
 		fmt.Println(resp.GetIdLibro()) 
 	}
