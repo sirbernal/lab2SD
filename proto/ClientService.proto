@@ -5,15 +5,24 @@ package client_service;
 option go_package = "client_service;proto";
 
 message UploadRequest {
+    int64 tipo = 1;   //0- Subir archivo  1.- Bajar Archivo
+    string nombre = 2; // Nombre del Archivo
+    int64 totalchunks =3;
+}
+ 
+message UploadResponse {
+    int64 resp = 1; //0.- Disponible   1.-cualquier otra wea
+}
+message UploadChunksRequest {
     bytes chunk = 1;
 
 }
  
-message UploadResponse {
-    string id_libro = 1;
-
+message UploadChunksResponse {
+    string resp = 1;
 }
 
 service ClientService {
     rpc Upload (UploadRequest) returns (UploadResponse) {}
+    rpc UploadChunks (UploadChunksRequest) returns (UploadChunksResponse) {}
 }

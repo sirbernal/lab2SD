@@ -53,6 +53,30 @@ func Chunker(archivo string) []ChunkAndN{
 	file.Close()
 	return chunks
 }
+/* func Unchunker(name string){
+	_, err := os.Create(name)
+	if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+	}
+	file, err := os.OpenFile(name, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	for _,chunk:= range chunks{
+		_, err := file.Write(chunk)	
+		if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+		}
+		file.Sync()
+	}
+	file.Close()
+	fmt.Println(len(chunks))
+	chunks = [][]byte{}
+	fmt.Println(len(chunks))
+} */
 
 func main() {
 	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
@@ -65,11 +89,26 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-
 	chunks := Chunker("./ejemplo.pdf")
+	msg:= &pb.UploadRequest{Tipo: 0, Nombre: "lel.pdf", Totalchunks: int64(len(chunks))}
+	resp, err := client.Upload(ctx, msg)
 	fmt.Println(len(chunks))
-	for i,chunk :=range chunks{
-		msg:= &pb.UploadRequest{Chunk: chunk.Chunk[:chunk.N]}
+	if resp.GetResp()==int64(0){
+		for i,chunk :=range chunks{
+			msg:= &pb.UploadChunksRequest{Chunk: chunk.Chunk[:chunk.N]}
+			resp, err := client.UploadChunks(ctx, msg)
+			if err != nil {
+				log.Fatalf("can not receive %v", err)
+			}
+			if i==(len(chunks)-1){
+				fmt.Println("aqui avisa q mando todo al namenode y manda el len")
+			}
+			fmt.Println(resp.GetResp()) 
+		}	
+	}
+	
+	/*for i,chunk :=range chunks{
+		msg:= &pb.UploadChunksRequest{Chunk: chunk.Chunk[:chunk.N]}
 		resp, err := client.Upload(ctx, msg)
 		if err != nil {
 			log.Fatalf("can not receive %v", err)
@@ -78,7 +117,7 @@ func main() {
 			fmt.Println("aqui avisa q mando todo al namenode y manda el len")
 		}
 		fmt.Println(resp.GetIdLibro()) 
-	}
+	}*/
 
 			// write to disk
 			//fileName := "part_" + strconv.FormatUint(i, 10)

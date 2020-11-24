@@ -6,7 +6,8 @@ import (
 	"net"
 	"context"
 	"time"
-	//"os"
+	"os"
+	"strconv"
 	pb "github.com/sirbernal/lab2SD/proto/client_service"
 	pb2 "github.com/sirbernal/lab2SD/proto/node_service"
 	"google.golang.org/grpc"
@@ -14,9 +15,15 @@ import (
 
 type server struct {
 }
-
+type reg struct{
+	nombre string
+	direccion string //o cantidad 
+}
 var chunks [][]byte
-/* func Unchunker(name string){
+var total int64 
+var nombrearchivo string 
+
+func Unchunker(name string){
 	_, err := os.Create(name)
 	if err != nil {
 			fmt.Println(err)
@@ -39,8 +46,39 @@ var chunks [][]byte
 	fmt.Println(len(chunks))
 	chunks = [][]byte{}
 	fmt.Println(len(chunks))
-} */
-
+}
+var registro [][]reg
+func GuardarLibro(name string, partes int){
+	var libro []reg
+	libro = append(libro,reg{name,strconv.Itoa(partes)})
+	for i:=0; i < partes; i++ {
+		libro = append(libro,reg{name+"_parte_"+strconv.Itoa(i),"aqui va una IP"})
+	}
+	registro=append(registro,libro)
+	fmt.Println(registro)
+}
+func ActualizarLibro(){
+	file,err:= os.OpenFile("registro.txt",os.O_CREATE|os.O_WRONLY,0777) //actualiza archivo de registro
+	defer file.Close()
+	if err !=nil{
+		os.Exit(1)
+	}
+	for _,libro :=range registro{
+		for i,detalle :=range libro{
+			var word string
+			if i==0{
+				word=detalle.nombre+" Cantidad_Partes_"+detalle.direccion
+			}else{
+				word=detalle.nombre+" "+detalle.direccion
+			}
+			_, err := file.WriteString(word + "\n")
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+	file.Close()
+}
 func ItsAlive(){
 	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 	if err != nil {
@@ -58,24 +96,32 @@ func ItsAlive(){
 	fmt.Println(resp.GetMsg())
 }
 
-func (s *server) Upload(ctx context.Context, msg *pb.UploadRequest) (*pb.UploadResponse, error) {
+func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) (*pb.UploadChunksResponse, error) {
 	fmt.Println(len(chunks))
 
 
 	fmt.Println("Recibido")
 	//fmt.Println(msg.GetChunk())
 	chunks=append(chunks,msg.GetChunk())
-	ItsAlive()
+	//ItsAlive()
 	
-	/*if len(chunks)==4{
+	if int64(len(chunks))==total{
 		go func(){
-			Unchunker("ejemploarmado.pdf")
+			Unchunker(nombrearchivo)
+			GuardarLibro(nombrearchivo,int(total))
+			ActualizarLibro()
 		}()
-	} */
-	return &pb.UploadResponse{IdLibro : "recibido en el server", }, nil
+	}
+	return &pb.UploadChunksResponse{Resp : "recibido en el server", }, nil
 	
 }
-
+func (s *server) Upload(ctx context.Context, msg *pb.UploadRequest) (*pb.UploadResponse, error) {
+	nombrearchivo=msg.GetNombre()
+	total=msg.GetTotalchunks()
+	fmt.Println(msg.GetNombre())
+	fmt.Println(msg.GetTotalchunks())
+	return &pb.UploadResponse{Resp : int64(0), }, nil
+}
 func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {
 	return &pb2.AliveResponse{Msg : "Im Alive bitch", }, nil
 }
