@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package node_service;
+
+option go_package = "node_service;proto";
+
+message AliveRequest {
+    string msg = 1;
+
+}
+ 
+message AliveResponse {
+    string msg = 1;
+
+}
+
+service NodeService {
+    rpc Alive (AliveRequest) returns (AliveResponse) {}
+}

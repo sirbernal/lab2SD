@@ -5,10 +5,8 @@ import (
 	"log"
 	"net"
 	"context"
-	"time"
 	//"os"
 	pb "github.com/sirbernal/lab2SD/proto/client_service"
-	pb2 "github.com/sirbernal/lab2SD/proto/node_service"
 	"google.golang.org/grpc"
 )
 
@@ -41,32 +39,13 @@ var chunks [][]byte
 	fmt.Println(len(chunks))
 } */
 
-func ItsAlive(){
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer conn.Close()
-
-	client := pb2.NewNodeServiceClient(conn)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	msg:= &pb2.AliveRequest{Msg: "Are u alive?"}
-
-	resp, err := client.Alive(ctx, msg)
-	fmt.Println(resp.GetMsg())
-}
-
 func (s *server) Upload(ctx context.Context, msg *pb.UploadRequest) (*pb.UploadResponse, error) {
 	fmt.Println(len(chunks))
-
-
 	fmt.Println("Recibido")
 	//fmt.Println(msg.GetChunk())
 	chunks=append(chunks,msg.GetChunk())
-	ItsAlive()
-	
+	// generarpropuesta(chunks)
+
 	/*if len(chunks)==4{
 		go func(){
 			Unchunker("ejemploarmado.pdf")
@@ -76,39 +55,16 @@ func (s *server) Upload(ctx context.Context, msg *pb.UploadRequest) (*pb.UploadR
 	
 }
 
-func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {
-	return &pb2.AliveResponse{Msg : "Im Alive bitch", }, nil
-}
 
-
-
-func main()  {
+func main() {
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatal("Error conectando: %v", err)
 	}
 	s := grpc.NewServer()
 	pb.RegisterClientServiceServer(s, &server{}) //recibe conexión con el camion
-	pb2.RegisterNodeServiceServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-
-
-
-/*
-	chblock := make(chan struct{}) 
-	go func(){
-		lis, err := net.Listen("tcp", ":50051")
-		if err != nil {
-			log.Fatal("Error conectando: %v", err)
-		}
-		s := grpc.NewServer()
-		pb.RegisterClientServiceServer(s, &server{}) //recibe conexión con el camion
-		if err := s.Serve(lis); err != nil {
-			log.Fatalf("failed to serve: %v", err)
-		}
-	}()
-	<-chblock
-	*/
+	
 }
