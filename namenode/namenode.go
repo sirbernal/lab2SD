@@ -79,9 +79,7 @@ func ActualizarLibro(){
 	}
 	file.Close()
 }
-
-
-func ItsAlive(/*string dire*/){
+func ItsAlive(){
 	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalln(err)
@@ -128,14 +126,30 @@ func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveRe
 	return &pb2.AliveResponse{Msg : "Im Alive bitch", }, nil
 }
 
-func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2.PropuestaResponse, error) {
-	fmt.Println("Recibida la propuesta en namenode")
-	/* LOGICA DE LA PROPUESTA*/
-	return &pb2.PropuestaResponse{Msg : true, }, nil
+func GenerarPropuestaNueva (total int, conectados int)([]int64){
+	var propuesta []int64
+	for i:=0;i<=total/conectados;i++{
+		rand.Seed(time.Now().Unix())
+		lilprop:=rand.Perm(conectados)
+		if i==total/conectados{
+			sobra:=total%conectados
+			for j,num :=range lilprop{
+				if j==sobra{
+					break
+				}
+				propuesta=append(propuesta,int64(num))
+			}
+		}else{
+			for _,num :=range lilprop{
+				propuesta=append(propuesta,int64(num))
+			}
+		}
+	}
+	return propuesta
 }
 
 func main()  {
-	lis, err := net.Listen("tcp", ":50055")
+	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatal("Error conectando: %v", err)
 	}

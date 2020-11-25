@@ -53,7 +53,7 @@ func Chunker(archivo string) []ChunkAndN{
 	file.Close()
 	return chunks
 }
-/* func Unchunker(name string){
+func Unchunker(name string){
 	_, err := os.Create(name)
 	if err != nil {
 			fmt.Println(err)
@@ -76,7 +76,7 @@ func Chunker(archivo string) []ChunkAndN{
 	fmt.Println(len(chunks))
 	chunks = [][]byte{}
 	fmt.Println(len(chunks))
-} */
+}
 
 func main() {
 	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
