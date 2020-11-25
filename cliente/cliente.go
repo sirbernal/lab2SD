@@ -79,7 +79,7 @@ func Chunker(archivo string) []ChunkAndN{
 } */
 
 func main() {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalln(err)
 	}

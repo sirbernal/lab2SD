@@ -123,6 +123,100 @@ func (x *AliveResponse) GetMsg() string {
 	return ""
 }
 
+type PropuestaRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Msg string `protobuf:"bytes,1,opt,name=msg,proto3" json:"msg,omitempty"`
+}
+
+func (x *PropuestaRequest) Reset() {
+	*x = PropuestaRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_NodeService_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PropuestaRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PropuestaRequest) ProtoMessage() {}
+
+func (x *PropuestaRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_NodeService_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PropuestaRequest.ProtoReflect.Descriptor instead.
+func (*PropuestaRequest) Descriptor() ([]byte, []int) {
+	return file_proto_NodeService_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *PropuestaRequest) GetMsg() string {
+	if x != nil {
+		return x.Msg
+	}
+	return ""
+}
+
+type PropuestaResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Msg bool `protobuf:"varint,1,opt,name=msg,proto3" json:"msg,omitempty"`
+}
+
+func (x *PropuestaResponse) Reset() {
+	*x = PropuestaResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_NodeService_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PropuestaResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PropuestaResponse) ProtoMessage() {}
+
+func (x *PropuestaResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_NodeService_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PropuestaResponse.ProtoReflect.Descriptor instead.
+func (*PropuestaResponse) Descriptor() ([]byte, []int) {
+	return file_proto_NodeService_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *PropuestaResponse) GetMsg() bool {
+	if x != nil {
+		return x.Msg
+	}
+	return false
+}
+
 var File_proto_NodeService_proto protoreflect.FileDescriptor
 
 var file_proto_NodeService_proto_rawDesc = []byte{
@@ -132,14 +226,24 @@ var file_proto_NodeService_proto_rawDesc = []byte{
 	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x10, 0x0a, 0x03, 0x6d, 0x73, 0x67, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6d, 0x73, 0x67, 0x22, 0x21, 0x0a, 0x0d, 0x41, 0x6c, 0x69,
 	0x76, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x6d, 0x73,
-	0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6d, 0x73, 0x67, 0x32, 0x51, 0x0a, 0x0b,
-	0x4e, 0x6f, 0x64, 0x65, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x42, 0x0a, 0x05, 0x41,
-	0x6c, 0x69, 0x76, 0x65, 0x12, 0x1a, 0x2e, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x73, 0x65, 0x72, 0x76,
-	0x69, 0x63, 0x65, 0x2e, 0x41, 0x6c, 0x69, 0x76, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x1b, 0x2e, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e,
-	0x41, 0x6c, 0x69, 0x76, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42,
-	0x14, 0x5a, 0x12, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x3b,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6d, 0x73, 0x67, 0x22, 0x24, 0x0a, 0x10,
+	0x50, 0x72, 0x6f, 0x70, 0x75, 0x65, 0x73, 0x74, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x12, 0x10, 0x0a, 0x03, 0x6d, 0x73, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6d,
+	0x73, 0x67, 0x22, 0x25, 0x0a, 0x11, 0x50, 0x72, 0x6f, 0x70, 0x75, 0x65, 0x73, 0x74, 0x61, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x6d, 0x73, 0x67, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x08, 0x52, 0x03, 0x6d, 0x73, 0x67, 0x32, 0xa1, 0x01, 0x0a, 0x0b, 0x4e, 0x6f,
+	0x64, 0x65, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x42, 0x0a, 0x05, 0x41, 0x6c, 0x69,
+	0x76, 0x65, 0x12, 0x1a, 0x2e, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63,
+	0x65, 0x2e, 0x41, 0x6c, 0x69, 0x76, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b,
+	0x2e, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x41, 0x6c,
+	0x69, 0x76, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x4e, 0x0a,
+	0x09, 0x50, 0x72, 0x6f, 0x70, 0x75, 0x65, 0x73, 0x74, 0x61, 0x12, 0x1e, 0x2e, 0x6e, 0x6f, 0x64,
+	0x65, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x50, 0x72, 0x6f, 0x70, 0x75, 0x65,
+	0x73, 0x74, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1f, 0x2e, 0x6e, 0x6f, 0x64,
+	0x65, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x50, 0x72, 0x6f, 0x70, 0x75, 0x65,
+	0x73, 0x74, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x14, 0x5a,
+	0x12, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x3b, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -154,16 +258,20 @@ func file_proto_NodeService_proto_rawDescGZIP() []byte {
 	return file_proto_NodeService_proto_rawDescData
 }
 
-var file_proto_NodeService_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_NodeService_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_proto_NodeService_proto_goTypes = []interface{}{
-	(*AliveRequest)(nil),  // 0: node_service.AliveRequest
-	(*AliveResponse)(nil), // 1: node_service.AliveResponse
+	(*AliveRequest)(nil),      // 0: node_service.AliveRequest
+	(*AliveResponse)(nil),     // 1: node_service.AliveResponse
+	(*PropuestaRequest)(nil),  // 2: node_service.PropuestaRequest
+	(*PropuestaResponse)(nil), // 3: node_service.PropuestaResponse
 }
 var file_proto_NodeService_proto_depIdxs = []int32{
 	0, // 0: node_service.NodeService.Alive:input_type -> node_service.AliveRequest
-	1, // 1: node_service.NodeService.Alive:output_type -> node_service.AliveResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	2, // 1: node_service.NodeService.Propuesta:input_type -> node_service.PropuestaRequest
+	1, // 2: node_service.NodeService.Alive:output_type -> node_service.AliveResponse
+	3, // 3: node_service.NodeService.Propuesta:output_type -> node_service.PropuestaResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -199,6 +307,30 @@ func file_proto_NodeService_proto_init() {
 				return nil
 			}
 		}
+		file_proto_NodeService_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PropuestaRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_NodeService_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PropuestaResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -206,7 +338,7 @@ func file_proto_NodeService_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_NodeService_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -233,6 +365,7 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type NodeServiceClient interface {
 	Alive(ctx context.Context, in *AliveRequest, opts ...grpc.CallOption) (*AliveResponse, error)
+	Propuesta(ctx context.Context, in *PropuestaRequest, opts ...grpc.CallOption) (*PropuestaResponse, error)
 }
 
 type nodeServiceClient struct {
@@ -252,9 +385,19 @@ func (c *nodeServiceClient) Alive(ctx context.Context, in *AliveRequest, opts ..
 	return out, nil
 }
 
+func (c *nodeServiceClient) Propuesta(ctx context.Context, in *PropuestaRequest, opts ...grpc.CallOption) (*PropuestaResponse, error) {
+	out := new(PropuestaResponse)
+	err := c.cc.Invoke(ctx, "/node_service.NodeService/Propuesta", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NodeServiceServer is the server API for NodeService service.
 type NodeServiceServer interface {
 	Alive(context.Context, *AliveRequest) (*AliveResponse, error)
+	Propuesta(context.Context, *PropuestaRequest) (*PropuestaResponse, error)
 }
 
 // UnimplementedNodeServiceServer can be embedded to have forward compatible implementations.
@@ -263,6 +406,9 @@ type UnimplementedNodeServiceServer struct {
 
 func (*UnimplementedNodeServiceServer) Alive(context.Context, *AliveRequest) (*AliveResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Alive not implemented")
+}
+func (*UnimplementedNodeServiceServer) Propuesta(context.Context, *PropuestaRequest) (*PropuestaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Propuesta not implemented")
 }
 
 func RegisterNodeServiceServer(s *grpc.Server, srv NodeServiceServer) {
@@ -287,6 +433,24 @@ func _NodeService_Alive_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _NodeService_Propuesta_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PropuestaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NodeServiceServer).Propuesta(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/node_service.NodeService/Propuesta",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NodeServiceServer).Propuesta(ctx, req.(*PropuestaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _NodeService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "node_service.NodeService",
 	HandlerType: (*NodeServiceServer)(nil),
@@ -294,6 +458,10 @@ var _NodeService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Alive",
 			Handler:    _NodeService_Alive_Handler,
+		},
+		{
+			MethodName: "Propuesta",
+			Handler:    _NodeService_Propuesta_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

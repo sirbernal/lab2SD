@@ -14,6 +14,17 @@ message AliveResponse {
 
 }
 
+message PropuestaRequest {
+    string msg = 1;
+
+}
+ 
+message PropuestaResponse {
+    bool msg = 1;
+
+}
+
 service NodeService {
     rpc Alive (AliveRequest) returns (AliveResponse) {}
+    rpc Propuesta (PropuestaRequest) returns (PropuestaResponse){}
 }
