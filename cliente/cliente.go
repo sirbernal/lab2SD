@@ -16,6 +16,9 @@ import (
 	pb "github.com/sirbernal/lab2SD/proto/client_service"
 	"google.golang.org/grpc"
 )
+
+var chunks [][]byte
+
 type ChunkAndN struct{
 	Chunk []byte
 	N int 
