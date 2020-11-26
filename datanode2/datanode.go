@@ -197,6 +197,16 @@ func (s *server) Distribucion(ctx context.Context, msg *pb2.DistribucionRequest)
 	return &pb2.DistribucionResponse{Resp : "",}, nil
 }
 
+func (s *server) DownloadNames(ctx context.Context, msg *pb.DownloadNamesRequest) (*pb.DownloadNamesResponse, error) {
+
+	return &pb.DownloadNamesResponse{Names : []string{} }, nil
+}
+
+func (s *server) DownloadChunks(ctx context.Context, msg *pb.DownloadChunksRequest) (*pb.DownloadChunksResponse, error) {
+
+	return &pb.DownloadChunksResponse{Prop : []int64{} }, nil
+}
+
 func main() {
 	
 	lis, err := net.Listen("tcp", ":50053")
