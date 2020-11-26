@@ -15,12 +15,13 @@ message AliveResponse {
 }
 
 message PropuestaRequest {
-    string msg = 1;
+    repeated int64 prop = 4;
 
 }
  
 message PropuestaResponse {
     bool msg = 1;
+    repeated int64 prop = 4;
 
 }
 

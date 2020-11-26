@@ -79,7 +79,7 @@ func SearchChunk (name string) (chunk []byte){
 func GenerarPropuesta (total int)([]int64){
 	var propuesta []int64
 	for i:=0;i<=total/3;i++{
-		rand.Seed(time.Now().Unix())
+		rand.Seed(time.Now().UnixNano())
 		lilprop:=rand.Perm(3)
 		if i==total/3{
 			sobra:=total%3
@@ -114,29 +114,28 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 	//fmt.Println(msg.GetChunk())
 	chunks=append(chunks,msg.GetChunk())
 	
-	if int64(len(chunks))==total{
+	if int64(len(chunks))==total{  // Cuando llegan todos los chunks del archivo al datanode, realizamos propuesta
 		
 		/* GGENERAR PROPUESTA*/
-		estado := false
-		if estado == false{
-			
-			conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
-			if err != nil {
-				log.Fatalln(err)
-			}
-			defer conn.Close()
-
-			client := pb2.NewNodeServiceClient(conn)
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			msg:= &pb2.PropuestaRequest{Msg: "Propuesta de ejemplo"}
-
-			resp, err := client.Propuesta(ctx, msg)
-			estado = resp.GetMsg()
+	
+		conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
+		if err != nil {
+			log.Fatalln(err)
 		}
+		defer conn.Close()
 
-		/* Enviar mensaje devuelta a cliente diciendole que ya terminamos la wea */
+		client := pb2.NewNodeServiceClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		propuesta := GenerarPropuesta(int(total))
+		msg:= &pb2.PropuestaRequest{Prop: propuesta}
+
+		_, err = client.Propuesta(ctx, msg)
+		//estado := resp.GetMsg()
+		
+
 		chunks = [][]byte{}
 		return &pb.UploadChunksResponse{Resp : "El servidor acepto su propuesta pete", }, nil
 			
@@ -153,7 +152,7 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 }
 
 func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {
-	return &pb2.AliveResponse{Msg : "Im Alive bitch", }, nil
+	return &pb2.AliveResponse{Msg : "Im Alive, datanode1", }, nil
 }
 
 func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2.PropuestaResponse, error) {

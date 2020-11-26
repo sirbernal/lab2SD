@@ -8,20 +8,28 @@ import (
 	"time"
 	"os"
 	"strconv"
+	"math/rand"
 	pb "github.com/sirbernal/lab2SD/proto/client_service"
 	pb2 "github.com/sirbernal/lab2SD/proto/node_service"
 	"google.golang.org/grpc"
 )
+//datanodes := ["10.10.28.82:50051","10.10.28.83:50051","10.10.28.84:50051"]
+
+
+
 
 type server struct {
 }
+
 type reg struct{
 	nombre string
 	direccion string //o cantidad 
 }
+
 var chunks [][]byte
 var total int64 
 var nombrearchivo string 
+var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
 
 func Unchunker(name string){
 	_, err := os.Create(name)
@@ -129,7 +137,7 @@ func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveRe
 func GenerarPropuestaNueva (total int, conectados int)([]int64){
 	var propuesta []int64
 	for i:=0;i<=total/conectados;i++{
-		rand.Seed(time.Now().Unix())
+		rand.Seed(time.Now().UnixNano())
 		lilprop:=rand.Perm(conectados)
 		if i==total/conectados{
 			sobra:=total%conectados
@@ -148,8 +156,55 @@ func GenerarPropuestaNueva (total int, conectados int)([]int64){
 	return propuesta
 }
 
+func AllAlive () (bool){
+	for j,dire :=range datanode{
+		conn, err := grpc.Dial(dire, grpc.WithInsecure())
+		if err != nil {
+			fmt.Println("No esta el datanode", j+1)
+			return false
+		}
+		defer conn.Close()
+
+		client := pb2.NewNodeServiceClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		msg:= &pb2.AliveRequest{Msg: "Are u alive?"}
+
+		resp, err := client.Alive(ctx, msg)
+		if err != nil {
+			fmt.Println("No esta el datanode", j+1)
+			return false
+		}
+		fmt.Println(resp.GetMsg())
+	}
+	fmt.Println("Todos los datanodes estan vivos")
+	return true
+}
+
+
+
+func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2.PropuestaResponse, error) {
+	
+	/* RECEPCION DE PROPUESTA DE DATANODE */
+
+	fmt.Println("Recibida propuesta!")
+	fmt.Println(msg.GetProp())
+
+	/* VERIFICAR QUE LOS NODOS DE LA PROPUESTA ESTEN ALIVE*/
+	//allalive := AllAlive()
+	//fmt.Println(allalive)
+	if AllAlive() {
+		return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
+	} else {
+
+		return &pb2.PropuestaResponse{Msg : false, Prop : []int64{}}, nil
+	}
+		
+}
+
 func main()  {
-	lis, err := net.Listen("tcp", ":50051")
+	lis, err := net.Listen("tcp", ":50055")
 	if err != nil {
 		log.Fatal("Error conectando: %v", err)
 	}
