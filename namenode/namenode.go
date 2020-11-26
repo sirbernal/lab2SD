@@ -22,11 +22,6 @@ import (
 type server struct {
 }
 
-type reg struct{
-	nombre string
-	direccion string //o cantidad 
-}
-
 var chunks [][]byte
 var total int64 
 var nombrearchivo string 
@@ -58,30 +53,27 @@ func Unchunker(name string){
 	chunks = [][]byte{}
 	fmt.Println(len(chunks))
 }
-var registro [][]reg
-func GuardarLibro(name string, partes int){
-	var libro []reg
-	libro = append(libro,reg{name,strconv.Itoa(partes)})
-	for i:=0; i < partes; i++ {
-		libro = append(libro,reg{name+"_parte_"+strconv.Itoa(i),"aqui va una IP"})
-	}
-	registro=append(registro,libro)
-	fmt.Println(registro)
+var registroname []string
+var registroprop [][]int64
+func GuardarPropuesta(name string, partes []int64){
+	registroname=append(registroname,name)
+	registroprop=append(registroprop,partes)
+	ActualizarRegistro()
 }
-func ActualizarLibro(){
+func ActualizarRegistro(){
 	file,err:= os.OpenFile("registro.txt",os.O_CREATE|os.O_WRONLY,0777) //actualiza archivo de registro
 	defer file.Close()
 	if err !=nil{
 		os.Exit(1)
 	}
-	for _,libro :=range registro{
-		for i,detalle :=range libro{
-			var word string
-			if i==0{
-				word=detalle.nombre+" Cantidad_Partes_"+detalle.direccion
-			}else{
-				word=detalle.nombre+" "+detalle.direccion
-			}
+	for i,propuesta :=range registroprop{
+		word:=registroname[i]+" Cantidad_Partes_"+strconv.Itoa(len(propuesta))
+		_, err := file.WriteString(word + "\n")
+		if err != nil {
+			log.Fatal(err)
+		}
+		for j,node:= range propuesta{
+			word="parte_"+strconv.Itoa(j)+" "+datanode[int(node)]
 			_, err := file.WriteString(word + "\n")
 			if err != nil {
 				log.Fatal(err)
@@ -119,8 +111,6 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 	if int64(len(chunks))==total{
 		go func(){
 			Unchunker(nombrearchivo)
-			GuardarLibro(nombrearchivo,int(total))
-			ActualizarLibro()
 		}()
 	}
 	return &pb.UploadChunksResponse{Resp : "recibido en el server", }, nil
@@ -254,21 +244,30 @@ func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2
 	//allalive := AllAlive()
 	//fmt.Println(allalive)
 	if AllAlive() {
+		GuardarPropuesta(msg.GetName(),msg.GetProp())
 		return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
 	} else {
-		return &pb2.PropuestaResponse{Msg : false, Prop : GenerarPropuestaNueva(len(msg.GetProp()),TotalConectados())}, nil
+		nuevaprop:=GenerarPropuestaNueva(len(msg.GetProp()),TotalConectados())
+		GuardarPropuesta(msg.GetName(),nuevaprop)
+		return &pb2.PropuestaResponse{Msg : false, Prop : nuevaprop}, nil
 	}
 		
 }
 
 func (s *server) DownloadNames(ctx context.Context, msg *pb.DownloadNamesRequest) (*pb.DownloadNamesResponse, error) {
-
-	return &pb.DownloadNamesResponse{Names : []string{} }, nil
+	return &pb.DownloadNamesResponse{Names : registroname }, nil
 }
-
+func BuscarChunks(name string)([]int64){
+	for i,reg :=range registroname{
+		if reg==name{
+			return registroprop[i]
+		}
+	}
+	return []int64{}
+}
 func (s *server) DownloadChunks(ctx context.Context, msg *pb.DownloadChunksRequest) (*pb.DownloadChunksResponse, error) {
 
-	return &pb.DownloadChunksResponse{Prop : []int64{} }, nil
+	return &pb.DownloadChunksResponse{Prop : BuscarChunks(msg.GetName()) }, nil
 }
 
 

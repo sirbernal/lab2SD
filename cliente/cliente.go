@@ -9,16 +9,16 @@ import (
 	"io"
 	"math"
 	"os"
-	//"strconv"
+	"strconv"
 
 
 
 	pb "github.com/sirbernal/lab2SD/proto/client_service"
 	"google.golang.org/grpc"
 )
-
-var chunks [][]byte
-
+var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
+var chunks [][]byte //donde guardo los chunks para subir
+var rechunks [][]byte //donde guardo los chunks para bajar
 type ChunkAndN struct{
 	Chunk []byte
 	N int 
@@ -67,7 +67,7 @@ func Unchunker(name string){
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	for _,chunk:= range chunks{
+	for _,chunk:= range rechunks{
 		_, err := file.Write(chunk)	
 		if err != nil {
 				fmt.Println(err)
@@ -76,9 +76,21 @@ func Unchunker(name string){
 		file.Sync()
 	}
 	file.Close()
-	fmt.Println(len(chunks))
-	chunks = [][]byte{}
-	fmt.Println(len(chunks))
+	rechunks = [][]byte{}
+}
+func DescargarChunks(name string, prop []int64){
+	for i, node:= range prop{
+		//pide el chunk a la maquina que le corresponde+
+		datan:=datanode[int(node)]
+		// i es la parte, datan es la direccion y name, el nombre del archivo
+		chunkadescargar:=name+"_"+strconv.Itoa(i)
+		fmt.Println(datan,chunkadescargar)
+		//aca se pide el chunk al datanode q corresponda
+		//guardarlo en rechunk
+		chunky:=[]byte{}
+		rechunks=append(rechunks,chunky)
+	}
+	Unchunker(name)
 }
 
 func main() {
@@ -89,7 +101,7 @@ func main() {
 	defer conn.Close()
 
 	client := pb.NewClientServiceClient(conn)
-
+    
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	chunks := Chunker("./ejemplo.pdf")

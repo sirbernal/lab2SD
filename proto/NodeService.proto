@@ -16,6 +16,7 @@ message AliveResponse {
 
 message PropuestaRequest {
     repeated int64 prop = 4;
+    string name=1;
 
 }
  

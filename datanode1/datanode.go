@@ -130,7 +130,7 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 		defer cancel()
 
 		propuesta := GenerarPropuesta(int(total))
-		msg:= &pb2.PropuestaRequest{Prop: propuesta}
+		msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo}
 
 		resp, err := client.Propuesta(ctx, msg)
 		//estado := resp.GetMsg()
