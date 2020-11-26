@@ -22,7 +22,29 @@ message UploadChunksResponse {
     string resp = 1;
 }
 
+message DownloadNamesRequest {
+    string req = 1;
+
+}
+ 
+message DownloadNamesResponse {
+    repeated string names = 1;
+}
+
+message DownloadChunksRequest {
+    string name = 1;
+
+}
+ 
+message DownloadChunksResponse {
+    repeated int64 prop = 1;
+}
+
+
+
 service ClientService {
     rpc Upload (UploadRequest) returns (UploadResponse) {}
     rpc UploadChunks (UploadChunksRequest) returns (UploadChunksResponse) {}
+    rpc DownloadNames (DownloadNamesRequest) returns (DownloadNamesResponse) {}
+    rpc DownloadChunks (DownloadChunksRequest) returns (DownloadChunksResponse) {}
 }

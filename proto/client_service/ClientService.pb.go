@@ -233,6 +233,194 @@ func (x *UploadChunksResponse) GetResp() string {
 	return ""
 }
 
+type DownloadNamesRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Req string `protobuf:"bytes,1,opt,name=req,proto3" json:"req,omitempty"`
+}
+
+func (x *DownloadNamesRequest) Reset() {
+	*x = DownloadNamesRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_ClientService_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DownloadNamesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadNamesRequest) ProtoMessage() {}
+
+func (x *DownloadNamesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_ClientService_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadNamesRequest.ProtoReflect.Descriptor instead.
+func (*DownloadNamesRequest) Descriptor() ([]byte, []int) {
+	return file_proto_ClientService_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *DownloadNamesRequest) GetReq() string {
+	if x != nil {
+		return x.Req
+	}
+	return ""
+}
+
+type DownloadNamesResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Names []string `protobuf:"bytes,1,rep,name=names,proto3" json:"names,omitempty"`
+}
+
+func (x *DownloadNamesResponse) Reset() {
+	*x = DownloadNamesResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_ClientService_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DownloadNamesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadNamesResponse) ProtoMessage() {}
+
+func (x *DownloadNamesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_ClientService_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadNamesResponse.ProtoReflect.Descriptor instead.
+func (*DownloadNamesResponse) Descriptor() ([]byte, []int) {
+	return file_proto_ClientService_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *DownloadNamesResponse) GetNames() []string {
+	if x != nil {
+		return x.Names
+	}
+	return nil
+}
+
+type DownloadChunksRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *DownloadChunksRequest) Reset() {
+	*x = DownloadChunksRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_ClientService_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DownloadChunksRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadChunksRequest) ProtoMessage() {}
+
+func (x *DownloadChunksRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_ClientService_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadChunksRequest.ProtoReflect.Descriptor instead.
+func (*DownloadChunksRequest) Descriptor() ([]byte, []int) {
+	return file_proto_ClientService_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *DownloadChunksRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type DownloadChunksResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Prop []int64 `protobuf:"varint,1,rep,packed,name=prop,proto3" json:"prop,omitempty"`
+}
+
+func (x *DownloadChunksResponse) Reset() {
+	*x = DownloadChunksResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_ClientService_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DownloadChunksResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadChunksResponse) ProtoMessage() {}
+
+func (x *DownloadChunksResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_ClientService_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadChunksResponse.ProtoReflect.Descriptor instead.
+func (*DownloadChunksResponse) Descriptor() ([]byte, []int) {
+	return file_proto_ClientService_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DownloadChunksResponse) GetProp() []int64 {
+	if x != nil {
+		return x.Prop
+	}
+	return nil
+}
+
 var File_proto_ClientService_proto protoreflect.FileDescriptor
 
 var file_proto_ClientService_proto_rawDesc = []byte{
@@ -252,21 +440,44 @@ var file_proto_ClientService_proto_rawDesc = []byte{
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x63, 0x68, 0x75, 0x6e, 0x6b, 0x22, 0x2a, 0x0a,
 	0x14, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x43, 0x68, 0x75, 0x6e, 0x6b, 0x73, 0x52, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x72, 0x65, 0x73, 0x70, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x04, 0x72, 0x65, 0x73, 0x70, 0x32, 0xb7, 0x01, 0x0a, 0x0d, 0x43, 0x6c,
-	0x69, 0x65, 0x6e, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x49, 0x0a, 0x06, 0x55,
-	0x70, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x1d, 0x2e, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x73,
-	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x1e, 0x2e, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x73, 0x65,
-	0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x5b, 0x0a, 0x0c, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64,
-	0x43, 0x68, 0x75, 0x6e, 0x6b, 0x73, 0x12, 0x23, 0x2e, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f,
-	0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x43, 0x68,
-	0x75, 0x6e, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x63, 0x6c,
-	0x69, 0x65, 0x6e, 0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x55, 0x70, 0x6c,
-	0x6f, 0x61, 0x64, 0x43, 0x68, 0x75, 0x6e, 0x6b, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x00, 0x42, 0x16, 0x5a, 0x14, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x73, 0x65,
-	0x72, 0x76, 0x69, 0x63, 0x65, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x01, 0x28, 0x09, 0x52, 0x04, 0x72, 0x65, 0x73, 0x70, 0x22, 0x28, 0x0a, 0x14, 0x44, 0x6f, 0x77,
+	0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x12, 0x10, 0x0a, 0x03, 0x72, 0x65, 0x71, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03,
+	0x72, 0x65, 0x71, 0x22, 0x2d, 0x0a, 0x15, 0x44, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x4e,
+	0x61, 0x6d, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x14, 0x0a, 0x05,
+	0x6e, 0x61, 0x6d, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x05, 0x6e, 0x61, 0x6d,
+	0x65, 0x73, 0x22, 0x2b, 0x0a, 0x15, 0x44, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x43, 0x68,
+	0x75, 0x6e, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x6e,
+	0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x22,
+	0x2c, 0x0a, 0x16, 0x44, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x43, 0x68, 0x75, 0x6e, 0x6b,
+	0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x72, 0x6f,
+	0x70, 0x18, 0x01, 0x20, 0x03, 0x28, 0x03, 0x52, 0x04, 0x70, 0x72, 0x6f, 0x70, 0x32, 0xfa, 0x02,
+	0x0a, 0x0d, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12,
+	0x49, 0x0a, 0x06, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x1d, 0x2e, 0x63, 0x6c, 0x69, 0x65,
+	0x6e, 0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x55, 0x70, 0x6c, 0x6f, 0x61,
+	0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1e, 0x2e, 0x63, 0x6c, 0x69, 0x65, 0x6e,
+	0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x5b, 0x0a, 0x0c, 0x55, 0x70,
+	0x6c, 0x6f, 0x61, 0x64, 0x43, 0x68, 0x75, 0x6e, 0x6b, 0x73, 0x12, 0x23, 0x2e, 0x63, 0x6c, 0x69,
+	0x65, 0x6e, 0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x55, 0x70, 0x6c, 0x6f,
+	0x61, 0x64, 0x43, 0x68, 0x75, 0x6e, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x24, 0x2e, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
+	0x2e, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x43, 0x68, 0x75, 0x6e, 0x6b, 0x73, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x5e, 0x0a, 0x0d, 0x44, 0x6f, 0x77, 0x6e, 0x6c,
+	0x6f, 0x61, 0x64, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x12, 0x24, 0x2e, 0x63, 0x6c, 0x69, 0x65, 0x6e,
+	0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x44, 0x6f, 0x77, 0x6e, 0x6c, 0x6f,
+	0x61, 0x64, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25,
+	0x2e, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e,
+	0x44, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x61, 0x0a, 0x0e, 0x44, 0x6f, 0x77, 0x6e, 0x6c,
+	0x6f, 0x61, 0x64, 0x43, 0x68, 0x75, 0x6e, 0x6b, 0x73, 0x12, 0x25, 0x2e, 0x63, 0x6c, 0x69, 0x65,
+	0x6e, 0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x44, 0x6f, 0x77, 0x6e, 0x6c,
+	0x6f, 0x61, 0x64, 0x43, 0x68, 0x75, 0x6e, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x26, 0x2e, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63,
+	0x65, 0x2e, 0x44, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x43, 0x68, 0x75, 0x6e, 0x6b, 0x73,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x16, 0x5a, 0x14, 0x63, 0x6c,
+	0x69, 0x65, 0x6e, 0x74, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x3b, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -281,20 +492,28 @@ func file_proto_ClientService_proto_rawDescGZIP() []byte {
 	return file_proto_ClientService_proto_rawDescData
 }
 
-var file_proto_ClientService_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_proto_ClientService_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_proto_ClientService_proto_goTypes = []interface{}{
-	(*UploadRequest)(nil),        // 0: client_service.UploadRequest
-	(*UploadResponse)(nil),       // 1: client_service.UploadResponse
-	(*UploadChunksRequest)(nil),  // 2: client_service.UploadChunksRequest
-	(*UploadChunksResponse)(nil), // 3: client_service.UploadChunksResponse
+	(*UploadRequest)(nil),          // 0: client_service.UploadRequest
+	(*UploadResponse)(nil),         // 1: client_service.UploadResponse
+	(*UploadChunksRequest)(nil),    // 2: client_service.UploadChunksRequest
+	(*UploadChunksResponse)(nil),   // 3: client_service.UploadChunksResponse
+	(*DownloadNamesRequest)(nil),   // 4: client_service.DownloadNamesRequest
+	(*DownloadNamesResponse)(nil),  // 5: client_service.DownloadNamesResponse
+	(*DownloadChunksRequest)(nil),  // 6: client_service.DownloadChunksRequest
+	(*DownloadChunksResponse)(nil), // 7: client_service.DownloadChunksResponse
 }
 var file_proto_ClientService_proto_depIdxs = []int32{
 	0, // 0: client_service.ClientService.Upload:input_type -> client_service.UploadRequest
 	2, // 1: client_service.ClientService.UploadChunks:input_type -> client_service.UploadChunksRequest
-	1, // 2: client_service.ClientService.Upload:output_type -> client_service.UploadResponse
-	3, // 3: client_service.ClientService.UploadChunks:output_type -> client_service.UploadChunksResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	4, // 2: client_service.ClientService.DownloadNames:input_type -> client_service.DownloadNamesRequest
+	6, // 3: client_service.ClientService.DownloadChunks:input_type -> client_service.DownloadChunksRequest
+	1, // 4: client_service.ClientService.Upload:output_type -> client_service.UploadResponse
+	3, // 5: client_service.ClientService.UploadChunks:output_type -> client_service.UploadChunksResponse
+	5, // 6: client_service.ClientService.DownloadNames:output_type -> client_service.DownloadNamesResponse
+	7, // 7: client_service.ClientService.DownloadChunks:output_type -> client_service.DownloadChunksResponse
+	4, // [4:8] is the sub-list for method output_type
+	0, // [0:4] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -354,6 +573,54 @@ func file_proto_ClientService_proto_init() {
 				return nil
 			}
 		}
+		file_proto_ClientService_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DownloadNamesRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_ClientService_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DownloadNamesResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_ClientService_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DownloadChunksRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_ClientService_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DownloadChunksResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -361,7 +628,7 @@ func file_proto_ClientService_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_ClientService_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -389,6 +656,8 @@ const _ = grpc.SupportPackageIsVersion6
 type ClientServiceClient interface {
 	Upload(ctx context.Context, in *UploadRequest, opts ...grpc.CallOption) (*UploadResponse, error)
 	UploadChunks(ctx context.Context, in *UploadChunksRequest, opts ...grpc.CallOption) (*UploadChunksResponse, error)
+	DownloadNames(ctx context.Context, in *DownloadNamesRequest, opts ...grpc.CallOption) (*DownloadNamesResponse, error)
+	DownloadChunks(ctx context.Context, in *DownloadChunksRequest, opts ...grpc.CallOption) (*DownloadChunksResponse, error)
 }
 
 type clientServiceClient struct {
@@ -417,10 +686,30 @@ func (c *clientServiceClient) UploadChunks(ctx context.Context, in *UploadChunks
 	return out, nil
 }
 
+func (c *clientServiceClient) DownloadNames(ctx context.Context, in *DownloadNamesRequest, opts ...grpc.CallOption) (*DownloadNamesResponse, error) {
+	out := new(DownloadNamesResponse)
+	err := c.cc.Invoke(ctx, "/client_service.ClientService/DownloadNames", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientServiceClient) DownloadChunks(ctx context.Context, in *DownloadChunksRequest, opts ...grpc.CallOption) (*DownloadChunksResponse, error) {
+	out := new(DownloadChunksResponse)
+	err := c.cc.Invoke(ctx, "/client_service.ClientService/DownloadChunks", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ClientServiceServer is the server API for ClientService service.
 type ClientServiceServer interface {
 	Upload(context.Context, *UploadRequest) (*UploadResponse, error)
 	UploadChunks(context.Context, *UploadChunksRequest) (*UploadChunksResponse, error)
+	DownloadNames(context.Context, *DownloadNamesRequest) (*DownloadNamesResponse, error)
+	DownloadChunks(context.Context, *DownloadChunksRequest) (*DownloadChunksResponse, error)
 }
 
 // UnimplementedClientServiceServer can be embedded to have forward compatible implementations.
@@ -432,6 +721,12 @@ func (*UnimplementedClientServiceServer) Upload(context.Context, *UploadRequest)
 }
 func (*UnimplementedClientServiceServer) UploadChunks(context.Context, *UploadChunksRequest) (*UploadChunksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadChunks not implemented")
+}
+func (*UnimplementedClientServiceServer) DownloadNames(context.Context, *DownloadNamesRequest) (*DownloadNamesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DownloadNames not implemented")
+}
+func (*UnimplementedClientServiceServer) DownloadChunks(context.Context, *DownloadChunksRequest) (*DownloadChunksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DownloadChunks not implemented")
 }
 
 func RegisterClientServiceServer(s *grpc.Server, srv ClientServiceServer) {
@@ -474,6 +769,42 @@ func _ClientService_UploadChunks_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientService_DownloadNames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DownloadNamesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientServiceServer).DownloadNames(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/client_service.ClientService/DownloadNames",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientServiceServer).DownloadNames(ctx, req.(*DownloadNamesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientService_DownloadChunks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DownloadChunksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientServiceServer).DownloadChunks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/client_service.ClientService/DownloadChunks",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientServiceServer).DownloadChunks(ctx, req.(*DownloadChunksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _ClientService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "client_service.ClientService",
 	HandlerType: (*ClientServiceServer)(nil),
@@ -485,6 +816,14 @@ var _ClientService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UploadChunks",
 			Handler:    _ClientService_UploadChunks_Handler,
+		},
+		{
+			MethodName: "DownloadNames",
+			Handler:    _ClientService_DownloadNames_Handler,
+		},
+		{
+			MethodName: "DownloadChunks",
+			Handler:    _ClientService_DownloadChunks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
