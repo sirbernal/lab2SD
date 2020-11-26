@@ -132,9 +132,9 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 		propuesta := GenerarPropuesta(int(total))
 		msg:= &pb2.PropuestaRequest{Prop: propuesta}
 
-		_, err = client.Propuesta(ctx, msg)
+		resp, err := client.Propuesta(ctx, msg)
 		//estado := resp.GetMsg()
-		
+		fmt.Println(resp.GetProp())
 
 		chunks = [][]byte{}
 		return &pb.UploadChunksResponse{Resp : "El servidor acepto su propuesta pete", }, nil

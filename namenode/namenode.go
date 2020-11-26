@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"math/rand"
+	"reflect"
 	pb "github.com/sirbernal/lab2SD/proto/client_service"
 	pb2 "github.com/sirbernal/lab2SD/proto/node_service"
 	"google.golang.org/grpc"
@@ -30,6 +31,8 @@ var chunks [][]byte
 var total int64 
 var nombrearchivo string 
 var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
+var datanodestatus = []bool{false,false,false}
+var activos []int
 
 func Unchunker(name string){
 	_, err := os.Create(name)
@@ -134,6 +137,18 @@ func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveRe
 	return &pb2.AliveResponse{Msg : "Im Alive bitch", }, nil
 }
 
+func TotalConectados()int{
+	activos= []int{}
+	cont:=0
+	for i,data:= range datanodestatus{
+		if data{
+			cont++
+			activos=append(activos, i)
+		}
+	}
+	fmt.Println(activos)
+	return cont
+}
 func GenerarPropuestaNueva (total int, conectados int)([]int64){
 	var propuesta []int64
 	for i:=0;i<=total/conectados;i++{
@@ -153,7 +168,37 @@ func GenerarPropuestaNueva (total int, conectados int)([]int64){
 			}
 		}
 	}
-	return propuesta
+	switch conectados{
+	case 1:
+		if activos[0]==0{
+			return propuesta
+		}else{
+			for i,_:= range propuesta{
+				propuesta[i]=int64(activos[0])
+			}
+			return propuesta
+		}
+	case 2:
+		if reflect.DeepEqual(activos,[]int{0,2}){
+			for i,j:=range propuesta{
+				if j==1{
+					propuesta[i]=2
+				}
+			}
+			return propuesta
+		}else if reflect.DeepEqual(activos,[]int{1,2}){
+			for i,j:=range propuesta{
+				if j==0{
+					propuesta[i]=2
+				}
+			}
+			return propuesta
+		}else{
+			return propuesta
+		}
+	default:
+		return propuesta
+	}
 }
 
 func AllAlive () (bool){
@@ -161,7 +206,8 @@ func AllAlive () (bool){
 		conn, err := grpc.Dial(dire, grpc.WithInsecure())
 		if err != nil {
 			fmt.Println("No esta el datanode", j+1)
-			return false
+			datanodestatus[j]=false
+			continue
 		}
 		defer conn.Close()
 
@@ -174,12 +220,19 @@ func AllAlive () (bool){
 		resp, err := client.Alive(ctx, msg)
 		if err != nil {
 			fmt.Println("No esta el datanode", j+1)
-			return false
+			datanodestatus[j]=false
+			continue
 		}
+		datanodestatus[j]=true
 		fmt.Println(resp.GetMsg())
 	}
-	fmt.Println("Todos los datanodes estan vivos")
-	return true
+	
+	if reflect.DeepEqual(datanodestatus,[]bool{true,true,true}){
+		fmt.Println("Todos los datanodes estan vivos")
+		return true
+	}else{
+		return false
+	}
 }
 
 
@@ -197,8 +250,7 @@ func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2
 	if AllAlive() {
 		return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
 	} else {
-
-		return &pb2.PropuestaResponse{Msg : false, Prop : []int64{}}, nil
+		return &pb2.PropuestaResponse{Msg : false, Prop : GenerarPropuestaNueva(len(msg.GetProp()),TotalConectados())}, nil
 	}
 		
 }
