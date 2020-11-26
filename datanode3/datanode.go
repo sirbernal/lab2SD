@@ -49,8 +49,8 @@ var chunks [][]byte
 	chunks = [][]byte{}
 	fmt.Println(len(chunks))
 } */
-func SaveChunk (chunk []byte, name string, parte int){
-	fileName := name +"_"+ strconv.Itoa(parte)
+func SaveChunk (chunk []byte, name string){
+	fileName := name
 	_, err := os.Create(fileName)
 	if err != nil {
 			fmt.Println(err)
@@ -142,6 +142,10 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 
 		/* GENERAR DISTRIBUCION*/
 		for i,j :=range propuesta{
+			if datanode[2]==datanode[j]{
+				SaveChunk(chunks[i],nombrearchivo+"_"+strconv.Itoa(i))
+				continue
+			}
 			conn, err := grpc.Dial(datanode[j], grpc.WithInsecure())
 			if err != nil {
 				fmt.Println("Proceso abortado, se ha desconectado el nodo durante la distribucion")
@@ -187,11 +191,9 @@ func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2
 
 	return &pb2.PropuestaResponse{Msg : true,}, nil
 }
-
 func (s *server) Distribucion(ctx context.Context, msg *pb2.DistribucionRequest) (*pb2.DistribucionResponse, error) {
 	
-	
-	fmt.Println(msg.GetName())
+	SaveChunk(msg.GetChunk(),msg.GetName())
 	return &pb2.DistribucionResponse{Resp : "",}, nil
 }
 
