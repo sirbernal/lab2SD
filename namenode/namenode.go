@@ -134,7 +134,13 @@ func (s *server) Upload(ctx context.Context, msg *pb.UploadRequest) (*pb.UploadR
 	return &pb.UploadResponse{Resp : int64(0), }, nil
 }
 func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {
-	return &pb2.AliveResponse{Msg : "Im Alive bitch", }, nil
+	return &pb2.AliveResponse{Msg : "Im Alive, namenode", }, nil
+}
+
+func (s *server) Distribucion(ctx context.Context, msg *pb2.DistribucionRequest) (*pb2.DistribucionResponse, error) {
+	/* Esta interfaz se tiene que definir porque esta en el 2do proto, pero en este lado no lo usaremos asi que
+	no tiene sentido lo que esta aca , porciacaso*/
+	return &pb2.DistribucionResponse{Resp : "",}, nil
 }
 
 func TotalConectados()int{

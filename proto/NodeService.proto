@@ -25,7 +25,20 @@ message PropuestaResponse {
 
 }
 
+message DistribucionRequest {
+    bytes chunk = 1;
+    string name = 2;
+
+}
+
+message DistribucionResponse {
+    string resp = 1;
+
+}
+
+
 service NodeService {
     rpc Alive (AliveRequest) returns (AliveResponse) {}
     rpc Propuesta (PropuestaRequest) returns (PropuestaResponse){}
+    rpc Distribucion (DistribucionRequest) returns (DistribucionResponse) {}
 }
