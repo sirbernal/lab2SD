@@ -118,6 +118,7 @@ func SolicitarUbicacion(libro string)([]int64){
 }
 func DescargarChunks(name string, prop []int64){
 	for i, node:= range prop{
+		fmt.Println(i)
 		//pide el chunk a la maquina que le corresponde+
 		datan:=datanode[int(node)]
 		// i es la parte, datan es la direccion y name, el nombre del archivo
@@ -135,16 +136,18 @@ func DescargarChunks(name string, prop []int64){
 		
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		msg:= &pb.DownloadChunksRequest{Name: chunkadescargar,}
+		//fmt.Println(chunkadescargar)
+		msg:= &pb.DownloadChunksRequest{Name: chunkadescargar}
 		resp, err := client.DownloadChunks(ctx, msg)
 		//////////////////////////////////////////////////////////////////
 
 		//aca se pide el chunk al datanode q corresponda
 		//guardarlo en rechunk
 		//chunky:=[]byte{}
+
 		rechunks=append(rechunks,resp.GetChunk())
 	}
-	fmt.Println(len(rechunks))
+	//fmt.Println(rechunks)
 	Unchunker(name)
 }
 
@@ -164,7 +167,6 @@ func main() {
 	msg:= &pb.UploadRequest{Tipo: 0, Nombre: "lel.pdf", Totalchunks: int64(len(chunks))}
 	resp, err := client.Upload(ctx, msg)
 	fmt.Println(len(chunks))
-	Unchunker("test.pdf")
 	if resp.GetResp()==int64(0){
 		for i,chunk :=range chunks{
 			msg:= &pb.UploadChunksRequest{Chunk: chunk.Chunk[:chunk.N]}
@@ -180,8 +182,9 @@ func main() {
 	}
 	SolicitarLibros()
 	ubicacion := SolicitarUbicacion("lel.pdf")
+	DescargarChunks("lel.pdf", ubicacion)
 	fmt.Println(ubicacion)
-	//DescargarChunks("lel.pdf", ubicacion)
+	
 
 	
 	/*for i,chunk :=range chunks{

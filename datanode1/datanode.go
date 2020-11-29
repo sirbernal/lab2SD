@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"os"
 	"math/rand"
+	"bufio"
 	pb "github.com/sirbernal/lab2SD/proto/client_service"
 	pb2 "github.com/sirbernal/lab2SD/proto/node_service"
 	"google.golang.org/grpc"
@@ -75,6 +76,8 @@ func SearchChunk (name string) (chunk []byte){
 	}
 	var chunkSize int64 = chunkInfo.Size()
 	chunkBufferBytes := make([]byte, chunkSize)
+	reader := bufio.NewReader(newFileChunk)
+	reader.Read(chunkBufferBytes)
 	return chunkBufferBytes
 }
 func GenerarPropuesta (total int)([]int64){
