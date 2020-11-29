@@ -37,7 +37,15 @@ message DownloadChunksRequest {
 }
  
 message DownloadChunksResponse {
-    repeated int64 prop = 1;
+    bytes chunk = 1;
+}
+
+message LoCRequest {
+    string req = 1;
+}
+
+message LoCResponse {
+    repeated int64 location = 1;
 }
 
 
@@ -46,5 +54,6 @@ service ClientService {
     rpc Upload (UploadRequest) returns (UploadResponse) {}
     rpc UploadChunks (UploadChunksRequest) returns (UploadChunksResponse) {}
     rpc DownloadNames (DownloadNamesRequest) returns (DownloadNamesResponse) {}
+    rpc LocationsofChunks (LoCRequest) returns (LoCResponse) {}
     rpc DownloadChunks (DownloadChunksRequest) returns (DownloadChunksResponse) {}
 }

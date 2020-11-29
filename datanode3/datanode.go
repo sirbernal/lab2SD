@@ -23,6 +23,7 @@ var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
 var total int64 
 var nombrearchivo string
 var cont int64
+var tipo_distribucion string
 
 var chunks [][]byte
 /* func Unchunker(name string){
@@ -108,44 +109,46 @@ func (s *server) Upload(ctx context.Context, msg *pb.UploadRequest) (*pb.UploadR
 
 func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) (*pb.UploadChunksResponse, error) {
 	fmt.Println(len(chunks))
-
-
 	fmt.Println("Recibido")
-	//fmt.Println(msg.GetChunk())
-	chunks=append(chunks,msg.GetChunk())
 	
-	if int64(len(chunks))==total{  // Cuando llegan todos los chunks del archivo al datanode, realizamos propuesta
+	if tipo_distribucion == "centralizado"{  // Logica cuando el algoritmo de distrib. es centralizado
 		
-		/* GGENERAR PROPUESTA*/
-	
-		conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
-		if err != nil {
-			log.Fatalln(err)
-		}
-		defer conn.Close()
+		chunks=append(chunks,msg.GetChunk()) // Agregamos el chunk a nuestro arreglo
 
-		client := pb2.NewNodeServiceClient(conn)
+		if int64(len(chunks))==total{ // Cuando llegan todos los chunks del archivo al datanode, realizamos propuesta
+			
+			/* GENERAR PROPUESTA*/
+			/* Primero, generamos la conexion con namenode*/
+			conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
+			if err != nil {
+				log.Fatalln(err)
+			}
+			defer conn.Close()
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
+			client := pb2.NewNodeServiceClient(conn)
 
-		propuesta := GenerarPropuesta(int(total))
-		msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo}
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
 
-		resp, err := client.Propuesta(ctx, msg)
-		//estado := resp.GetMsg()
-		fmt.Println(resp.GetProp())
+			propuesta := GenerarPropuesta(int(total)) // Con esta funcion generaremos la propuesta
+			msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo} // generamos el mensaje con la propuesta
 
-		if resp.GetMsg() == false{
-			propuesta = resp.GetProp()
+			resp, err := client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
+			//estado := resp.GetMsg()
+			fmt.Println(resp.GetProp())
+
+			if resp.GetMsg() == false{  // cuando se rechaza la propuesta, la actualizamos con la propuesta recibida x namenode
+				propuesta = resp.GetProp()
 		}
 
 		/* GENERAR DISTRIBUCION*/
+		/* Leemos el arrigo de propuesta que tiene las designaciones de cada chunk que ira a cada datanode*/
 		for i,j :=range propuesta{
-			if datanode[2]==datanode[j]{
-				SaveChunk(chunks[i],nombrearchivo+"_"+strconv.Itoa(i))
+			if datanode[0]==datanode[j]{ //claramente, si un chunk se debe quedar en este datanode, para que enviarlo XD
+				SaveChunk(chunks[i],nombrearchivo+"_"+strconv.Itoa(i)) // Simplemente lo guardamos con la funcion savechunk
 				continue
 			}
+			// Procedemos a generar la conexion con el datanode a donde enviaremos el chunk
 			conn, err := grpc.Dial(datanode[j], grpc.WithInsecure())
 			if err != nil {
 				fmt.Println("Proceso abortado, se ha desconectado el nodo durante la distribucion")
@@ -157,27 +160,26 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 	
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
+			// Creamos el mensaje con el chunk correspondiente + el nombre del chunk 
 			msg:= &pb2.DistribucionRequest{Chunk: chunks[i], Name: nombrearchivo+"_"+strconv.Itoa(i)}
-	
+			
+			// Enviamos el chunk
 			_, err = client.Distribucion(ctx, msg)
 			if err != nil {
 				continue
 			}
 		}
 
+		// Una vez realizada la distribucion, reseteamos el arreglo donde guardamos los chunks
 		chunks = [][]byte{}
-		return &pb.UploadChunksResponse{Resp : "El servidor acepto su propuesta pete", }, nil
-			
-		
-		
-		/*go func(){
-			Unchunker(nombrearchivo)
-			GuardarLibro(nombrearchivo,int(total))
-			ActualizarLibro()
-		}()*/
+		return &pb.UploadChunksResponse{Resp : "El servidor guardo el archivo", }, nil //Avisamos de que estamos ok con la subida
+
+		}
+		// Esto se envia cuando no se tienen todos los chunks del archivo
+		return &pb.UploadChunksResponse{Resp : "chunk recibido en el server", }, nil
 	}
-	return &pb.UploadChunksResponse{Resp : "recibido en el server", }, nil
 	
+	return &pb.UploadChunksResponse{Resp : "Fallo algo", }, nil
 }
 
 func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {
@@ -203,9 +205,15 @@ func (s *server) DownloadNames(ctx context.Context, msg *pb.DownloadNamesRequest
 }
 
 func (s *server) DownloadChunks(ctx context.Context, msg *pb.DownloadChunksRequest) (*pb.DownloadChunksResponse, error) {
-
-	return &pb.DownloadChunksResponse{Prop : []int64{} }, nil
+	return &pb.DownloadChunksResponse{Chunk : SearchChunk(msg.GetName()) }, nil
 }
+
+func (s *server) LocationsofChunks(ctx context.Context, msg *pb.LoCRequest) (*pb.LoCResponse, error) {
+
+	return &pb.LoCResponse{Location: []int64{} }, nil
+}
+
+
 
 func main() {
 	

@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 	"reflect"
+	"os"
 )
 var activos=[]int{1,2}
 func GenerarPropuestaNueva (total int, conectados int)([]int64){
@@ -63,4 +64,12 @@ func main() {
 	asd:=GenerarPropuestaNueva(54,2)
 	fmt.Println(asd)
 	fmt.Println(len(asd))
+	
+	file, err := os.Open("datanode1/lel.pdf_0")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} 
+	defer file.Close()
+	fmt.Println(reflect.TypeOf(file))
 }

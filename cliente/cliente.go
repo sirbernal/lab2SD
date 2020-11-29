@@ -19,6 +19,7 @@ import (
 var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
 var chunks [][]byte //donde guardo los chunks para subir
 var rechunks [][]byte //donde guardo los chunks para bajar
+
 type ChunkAndN struct{
 	Chunk []byte
 	N int 
@@ -78,6 +79,43 @@ func Unchunker(name string){
 	file.Close()
 	rechunks = [][]byte{}
 }
+
+func SolicitarLibros(){
+	conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer conn.Close()
+
+	client := pb.NewClientServiceClient(conn)
+    
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	msg:= &pb.DownloadNamesRequest{Req: "Libros",}
+	resp, err := client.DownloadNames(ctx, msg)
+	
+	fmt.Println("Libro(s) disponible(s)")
+	for _,name:=range resp.GetNames(){
+		fmt.Println(name)
+	}
+}
+func SolicitarUbicacion(libro string)([]int64){
+	conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer conn.Close()
+
+	client := pb.NewClientServiceClient(conn)
+    
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	msg:= &pb.LoCRequest{Req: libro,}
+	resp, err := client.LocationsofChunks(ctx, msg)
+	
+	return resp.GetLocation()
+		
+}
 func DescargarChunks(name string, prop []int64){
 	for i, node:= range prop{
 		//pide el chunk a la maquina que le corresponde+
@@ -85,13 +123,31 @@ func DescargarChunks(name string, prop []int64){
 		// i es la parte, datan es la direccion y name, el nombre del archivo
 		chunkadescargar:=name+"_"+strconv.Itoa(i)
 		fmt.Println(datan,chunkadescargar)
+
+		//////////// Pedir el chunk al datanode correspondiente ///////////
+		conn, err := grpc.Dial(datan, grpc.WithInsecure())
+		if err != nil {
+			log.Fatalln(err)
+		}
+		defer conn.Close()
+
+		client := pb.NewClientServiceClient(conn)
+		
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		msg:= &pb.DownloadChunksRequest{Name: chunkadescargar,}
+		resp, err := client.DownloadChunks(ctx, msg)
+		//////////////////////////////////////////////////////////////////
+
 		//aca se pide el chunk al datanode q corresponda
 		//guardarlo en rechunk
-		chunky:=[]byte{}
-		rechunks=append(rechunks,chunky)
+		//chunky:=[]byte{}
+		rechunks=append(rechunks,resp.GetChunk())
 	}
+	fmt.Println(len(rechunks))
 	Unchunker(name)
 }
+
 
 func main() {
 	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
@@ -108,6 +164,7 @@ func main() {
 	msg:= &pb.UploadRequest{Tipo: 0, Nombre: "lel.pdf", Totalchunks: int64(len(chunks))}
 	resp, err := client.Upload(ctx, msg)
 	fmt.Println(len(chunks))
+	Unchunker("test.pdf")
 	if resp.GetResp()==int64(0){
 		for i,chunk :=range chunks{
 			msg:= &pb.UploadChunksRequest{Chunk: chunk.Chunk[:chunk.N]}
@@ -121,6 +178,11 @@ func main() {
 			fmt.Println(resp.GetResp()) 
 		}	
 	}
+	SolicitarLibros()
+	ubicacion := SolicitarUbicacion("lel.pdf")
+	fmt.Println(ubicacion)
+	//DescargarChunks("lel.pdf", ubicacion)
+
 	
 	/*for i,chunk :=range chunks{
 		msg:= &pb.UploadChunksRequest{Chunk: chunk.Chunk[:chunk.N]}

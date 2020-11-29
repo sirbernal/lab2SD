@@ -267,8 +267,13 @@ func BuscarChunks(name string)([]int64){
 }
 func (s *server) DownloadChunks(ctx context.Context, msg *pb.DownloadChunksRequest) (*pb.DownloadChunksResponse, error) {
 
-	return &pb.DownloadChunksResponse{Prop : BuscarChunks(msg.GetName()) }, nil
+	return &pb.DownloadChunksResponse{Chunk : []byte{} }, nil
 }
+func (s *server) LocationsofChunks(ctx context.Context, msg *pb.LoCRequest) (*pb.LoCResponse, error) {
+
+	return &pb.LoCResponse{Location: BuscarChunks(msg.GetReq())} , nil
+}
+
 
 
 func main()  {
