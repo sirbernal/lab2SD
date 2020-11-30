@@ -200,9 +200,9 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 			datanode y volvemos a realizarlo con una nueva propuesta, para eso usamos una variable booleana
 			proceso que cuando se aceptan todas las propuestas, recien procederiamos a distribuir */
 			var propuesta []int64
-			proceso := true
 			var contador int64
-			for proceso{
+			Proceso:
+			for{
 				for _,dire:= range datanode{
 					/* GENERAR PROPUESTA*/
 					/* Primero, generamos la conexion con cada datanode*/
@@ -230,12 +230,13 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 					if resp.GetMsg() == false{  // cuando se rechaza la propuesta, la actualizamos con la propuesta recibida x namenode	
 						
 						propuesta=GenerarPropuestaNueva(len(propuesta),TotalConectados())
+						contador = 0
 						break
 					}
 					contador++
 				}
 				if int(contador)==TotalConectados()-1{
-					proceso=false
+					break Proceso
 				}
 			}
 
@@ -373,7 +374,8 @@ func GenerarPropuestaNueva (total int, conectados int)([]int64){
 	}
 }
 
-func AllAlive () (bool){
+func AllAlive (prop []int64) (bool){
+
 	for j,dire :=range datanode{
 		conn, err := grpc.Dial(dire, grpc.WithInsecure())
 		if err != nil {
@@ -409,6 +411,7 @@ func AllAlive () (bool){
 
 
 
+
 func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2.PropuestaResponse, error) {
 	
 	/* RECEPCION DE PROPUESTA DE DATANODE */
@@ -417,15 +420,13 @@ func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2
 	fmt.Println(msg.GetProp())
 
 	/* VERIFICAR QUE LOS NODOS DE LA PROPUESTA ESTEN ALIVE*/
-	//allalive := AllAlive()
-	//fmt.Println(allalive)
+	/* Si todos los nodos de la propuesta estan conectados, acepta*/
 	if AllAlive() {
-		GuardarPropuesta(msg.GetName(),msg.GetProp())
 		return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
 	} else {
-		nuevaprop:=GenerarPropuestaNueva(len(msg.GetProp()),TotalConectados())
-		GuardarPropuesta(msg.GetName(),nuevaprop)
-		return &pb2.PropuestaResponse{Msg : false, Prop : nuevaprop}, nil
+		var temp []int64{}
+		 
+		return &pb2.PropuestaResponse{Msg : false, Prop : []int64{}}, nil
 	}
 		
 }
