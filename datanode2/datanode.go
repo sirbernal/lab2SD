@@ -11,6 +11,7 @@ import (
 	"os"
 	"math/rand"
 	"bufio"
+	"reflect"
 	pb "github.com/sirbernal/lab2SD/proto/client_service"
 	pb2 "github.com/sirbernal/lab2SD/proto/node_service"
 	"google.golang.org/grpc"
@@ -27,7 +28,11 @@ var cont int64
 var chunks [][]byte
 var tipo_distribucion string
 var this_datanode = datanode[1]
-
+var activos []int
+var datanodestatus = []bool{false,false,false}
+//BORRAR VARIABLES TEMPORALES
+var registroname []string
+var registroprop [][]int64
 /* func Unchunker(name string){
 	_, err := os.Create(name)
 	if err != nil {
@@ -271,13 +276,152 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {
 	return &pb2.AliveResponse{Msg : "Im Alive, datanode1", }, nil
 }
+func ActualizarRegistro(){
+	file,err:= os.OpenFile("registro.txt",os.O_CREATE|os.O_WRONLY,0777) //actualiza archivo de registro
+	defer file.Close()
+	if err !=nil{
+		os.Exit(1)
+	}
+	for i,propuesta :=range registroprop{
+		word:=registroname[i]+" Cantidad_Partes_"+strconv.Itoa(len(propuesta))
+		_, err := file.WriteString(word + "\n")
+		if err != nil {
+			log.Fatal(err)
+		}
+		for j,node:= range propuesta{
+			word="parte_"+strconv.Itoa(j)+" "+datanode[int(node)]
+			_, err := file.WriteString(word + "\n")
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+	file.Close()
+}
+func GuardarPropuesta(name string, partes []int64){
+	registroname=append(registroname,name)
+	registroprop=append(registroprop,partes)
+	ActualizarRegistro()
+}
+func TotalConectados()int{
+	activos= []int{}
+	cont:=0
+	for i,data:= range datanodestatus{
+		if data{
+			cont++
+			activos=append(activos, i)
+		}
+	}
+	fmt.Println(activos)
+	return cont
+}
+func GenerarPropuestaNueva (total int, conectados int)([]int64){
+	var propuesta []int64
+	for i:=0;i<=total/conectados;i++{
+		rand.Seed(time.Now().UnixNano())
+		lilprop:=rand.Perm(conectados)
+		if i==total/conectados{
+			sobra:=total%conectados
+			for j,num :=range lilprop{
+				if j==sobra{
+					break
+				}
+				propuesta=append(propuesta,int64(num))
+			}
+		}else{
+			for _,num :=range lilprop{
+				propuesta=append(propuesta,int64(num))
+			}
+		}
+	}
+	switch conectados{
+	case 1:
+		if activos[0]==0{
+			return propuesta
+		}else{
+			for i,_:= range propuesta{
+				propuesta[i]=int64(activos[0])
+			}
+			return propuesta
+		}
+	case 2:
+		if reflect.DeepEqual(activos,[]int{0,2}){
+			for i,j:=range propuesta{
+				if j==1{
+					propuesta[i]=2
+				}
+			}
+			return propuesta
+		}else if reflect.DeepEqual(activos,[]int{1,2}){
+			for i,j:=range propuesta{
+				if j==0{
+					propuesta[i]=2
+				}
+			}
+			return propuesta
+		}else{
+			return propuesta
+		}
+	default:
+		return propuesta
+	}
+}
+
+func AllAlive () (bool){
+	for j,dire :=range datanode{
+		conn, err := grpc.Dial(dire, grpc.WithInsecure())
+		if err != nil {
+			fmt.Println("No esta el datanode", j+1)
+			datanodestatus[j]=false
+			continue
+		}
+		defer conn.Close()
+
+		client := pb2.NewNodeServiceClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		msg:= &pb2.AliveRequest{Msg: "Are u alive?"}
+
+		resp, err := client.Alive(ctx, msg)
+		if err != nil {
+			fmt.Println("No esta el datanode", j+1)
+			datanodestatus[j]=false
+			continue
+		}
+		datanodestatus[j]=true
+		fmt.Println(resp.GetMsg())
+	}
+	
+	if reflect.DeepEqual(datanodestatus,[]bool{true,true,true}){
+		fmt.Println("Todos los datanodes estan vivos")
+		return true
+	}else{
+		return false
+	}
+}
+
+
 
 func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2.PropuestaResponse, error) {
 	
-	/* Esta interfaz se tiene que definir porque esta en el 2do proto, pero en este lado no lo usaremos asi que
-	no tiene sentido lo que esta aca , porciacaso*/
+	/* RECEPCION DE PROPUESTA DE DATANODE */
 
-	return &pb2.PropuestaResponse{Msg : true,}, nil
+	fmt.Println("Recibida propuesta!")
+	fmt.Println(msg.GetProp())
+
+	/* VERIFICAR QUE LOS NODOS DE LA PROPUESTA ESTEN ALIVE*/
+	//allalive := AllAlive()
+	//fmt.Println(allalive)
+	if AllAlive() {
+		GuardarPropuesta(msg.GetName(),msg.GetProp())
+		return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
+	} else {
+		nuevaprop:=GenerarPropuestaNueva(len(msg.GetProp()),TotalConectados())
+		GuardarPropuesta(msg.GetName(),nuevaprop)
+		return &pb2.PropuestaResponse{Msg : false, Prop : nuevaprop}, nil
+	}
+		
 }
 
 func (s *server) Distribucion(ctx context.Context, msg *pb2.DistribucionRequest) (*pb2.DistribucionResponse, error) {
@@ -302,8 +446,12 @@ func (s *server) LocationsofChunks(ctx context.Context, msg *pb.LoCRequest) (*pb
 }
 
 func (s *server) TypeDis(ctx context.Context, msg *pb.TypeRequest) (*pb.TypeResponse, error) {
-	tipo_distribucion = msg.GetType()
-	fmt.Println("Tipo distribucion: ", tipo_distribucion)
+	if msg.GetType()=="inicio"{
+		return &pb.TypeResponse{Resp: tipo_distribucion}, nil
+	}else{
+		tipo_distribucion = msg.GetType()
+		fmt.Println("Tipo distribucion: ", tipo_distribucion)
+	}
 	return &pb.TypeResponse{Resp: "ok" }, nil
 }
 

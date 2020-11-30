@@ -18,11 +18,12 @@ import (
 )
 var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
 var directions = []string{"localhost:50055", "localhost:50052","localhost:50053","localhost:50054"}
+var nodemode = []string{"","","",""}
 
 
 var chunks [][]byte //donde guardo los chunks para subir
 var rechunks [][]byte //donde guardo los chunks para bajar
-var tipo_distribucion string
+var tipo_distribucion string 
 
 type ChunkAndN struct{
 	Chunk []byte
@@ -268,70 +269,132 @@ func menu_centralizado(){
 func menu_distribuido(){
 	fmt.Println("Aqui deberia aplicarle el ricky wala")
 }
-func menu(){
-	var menu1 string
-	for {
-		fmt.Print("\n\n---Menu Principal--- \nIngrese que algoritmo de exclusión mutua desea experimentar\n1.-Algoritmo de Exclusión Mutua Centralizada\n2.-Algoritmo de Exclusión Mutua Distribuida\nIngrese opción:")
-		_,err:=fmt.Scanln(&menu1)
-			if err!=nil{
-				fmt.Print("\nFormato de ingreso no válido, pruebe nuevamente:")
-				continue
-			}
-		if menu1=="1"{
-			tipo_distribucion = "centralizado"
-			
-			for _, dire := range directions{
-				conn, err := grpc.Dial(dire, grpc.WithInsecure())
-				if err != nil {
-					fmt.Println("No esta el nodo")
-					continue
-				}
-				defer conn.Close()
-
-				client := pb.NewClientServiceClient(conn)
-
-				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-				defer cancel()
-				msg:= &pb.TypeRequest{Type: tipo_distribucion }
-
-				_, err = client.TypeDis(ctx, msg)
-				if err != nil {
-					fmt.Println("No esta el nodo")
-					continue
-					}
-			}
-			menu_centralizado()
-			break
-		}else if menu1=="2"{
-			tipo_distribucion = "distribuido"
-			
-			for _, dire := range directions{
-				conn, err := grpc.Dial(dire, grpc.WithInsecure())
-				if err != nil {
-					fmt.Println("No esta el nodo")
-					continue
-				}
-				defer conn.Close()
-
-				client := pb.NewClientServiceClient(conn)
-
-				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-				defer cancel()
-				msg:= &pb.TypeRequest{Type: tipo_distribucion }
-
-				_, err = client.TypeDis(ctx, msg)
-				if err != nil {
-					fmt.Println("No esta el nodo")
-					continue
-					}
-			}
-			menu_distribuido()
-			break
-		}else{
-			fmt.Println("\nFormato u opción no válida, pruebe nuevamente:\n\n")
-			continue
+func DistribStatus()int{ //0 estan sin modo, 1 esta centralizado, 2 esta distribuido, 3 fallo todo
+	cent:=0
+	dist:=0
+	for _,stat:=range nodemode{
+		if stat=="centralizado"{
+			cent++
+		}else if stat=="distribuido"{
+			dist++
 		}
 	}
+	if dist==0 && cent==0{
+		return 0
+	}
+	if cent>0 && dist==0{
+		return 1
+	}
+	if dist>0 && cent==0{
+		return 2
+	}
+	if dist>0 && cent>0{
+		return 3
+	}
+	return -1
+}
+func VerifInicial()int{
+	for i, dire := range directions{
+		conn, err := grpc.Dial(dire, grpc.WithInsecure())
+		if err != nil {
+			//fmt.Println("No esta el nodo")
+			continue
+		}
+		defer conn.Close()
+
+		client := pb.NewClientServiceClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		msg:= &pb.TypeRequest{Type: "inicio" }
+
+		resp, err := client.TypeDis(ctx, msg)
+		if err != nil {
+			//fmt.Println("No esta el nodo")
+			continue
+			}
+		nodemode[i]=resp.GetResp()
+	}
+	return DistribStatus()
+}
+func menu(){
+	init:=VerifInicial()
+	switch init{
+	case 0: 
+		var menu1 string
+		for {
+			fmt.Print("\n\n---Menu Principal--- \nIngrese que algoritmo de exclusión mutua desea experimentar\n1.-Algoritmo de Exclusión Mutua Centralizada\n2.-Algoritmo de Exclusión Mutua Distribuida\nIngrese opción:")
+			_,err:=fmt.Scanln(&menu1)
+				if err!=nil{
+					fmt.Print("\nFormato de ingreso no válido, pruebe nuevamente:")
+					continue
+				}
+			if menu1=="1"{
+				tipo_distribucion = "centralizado"
+				
+				for _, dire := range directions{
+					conn, err := grpc.Dial(dire, grpc.WithInsecure())
+					if err != nil {
+						fmt.Println("No esta el nodo")
+						continue
+					}
+					defer conn.Close()
+
+					client := pb.NewClientServiceClient(conn)
+
+					ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+					defer cancel()
+					msg:= &pb.TypeRequest{Type: tipo_distribucion }
+
+					_, err = client.TypeDis(ctx, msg)
+					if err != nil {
+						fmt.Println("No esta el nodo")
+						continue
+						}
+				}
+				menu_centralizado()
+				break
+			}else if menu1=="2"{
+				tipo_distribucion = "distribuido"
+				
+				for _, dire := range directions{
+					conn, err := grpc.Dial(dire, grpc.WithInsecure())
+					if err != nil {
+						fmt.Println("No esta el nodo")
+						continue
+					}
+					defer conn.Close()
+
+					client := pb.NewClientServiceClient(conn)
+
+					ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+					defer cancel()
+					msg:= &pb.TypeRequest{Type: tipo_distribucion }
+
+					_, err = client.TypeDis(ctx, msg)
+					if err != nil {
+						fmt.Println("No esta el nodo")
+						continue
+						}
+				}
+				menu_distribuido()
+				break
+			}else{
+				fmt.Println("\nFormato u opción no válida, pruebe nuevamente:\n\n")
+				continue
+			}
+		}
+	case 1:
+		fmt.Println("Algoritmo de Exclusión Mutua Centralizada Detectado\nRedireccionando a Menu del algoritmo...")
+		menu_centralizado()
+	case 2:
+		fmt.Println("Algoritmo de Exclusión Mutua Distribuida Detectado\nRedireccionando a Menu del algoritmo...")
+		menu_distribuido()
+	case 3:
+		fmt.Println("Algoritmo corrompido detectado! (Presencia de distintos algoritmos en distintos nodos)\nPor favor, reiniciar el sistema completo\n\n---Cerrando Sistema--")
+		return
+	}
+	
 }
 func main() {
 	menu()
