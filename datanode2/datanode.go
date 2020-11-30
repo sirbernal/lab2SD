@@ -25,6 +25,7 @@ var total int64
 var nombrearchivo string
 var cont int64
 var tipo_distribucion string
+var this_datanode = datanode[1]
 
 var chunks [][]byte
 /* func Unchunker(name string){
@@ -180,10 +181,93 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 		}
 		// Esto se envia cuando no se tienen todos los chunks del archivo
 		return &pb.UploadChunksResponse{Resp : "chunk recibido en el server", }, nil
+
+		
+	}else if tipo_distribucion == "distribuida" {
+		chunks=append(chunks,msg.GetChunk()) // Agregamos el chunk a nuestro arreglo
+
+		if int64(len(chunks))==total{// Cuando llegan todos los chunks del archivo al datanode, realizamos propuesta
+			
+		
+			/* Logica de esto, es que si una propuesta se rechaza, pues hay que volver a realizar una
+			nueva propuesta, por lo que rompemos el segundo for que esta hecho para enviar la propuesta a cada
+			datanode y volvemos a realizarlo con una nueva propuesta, para eso usamos una variable booleana
+			proceso que cuando se aceptan todas las propuestas, recien procederiamos a distribuir */
+			var propuesta []int64
+			proceso := true  
+			for proceso{
+				for _,dire:= range datanode{
+					/* GENERAR PROPUESTA*/
+					/* Primero, generamos la conexion con cada datanode*/
+					if this_datanode == dire{ // No enviaremos a este mismo nodo la propuesta a generar
+						continue
+					}
+					conn, err := grpc.Dial(dire, grpc.WithInsecure()) // enviamos propuesta a un nodo especifico
+					if err != nil {
+						log.Fatalln(err)
+					}
+					defer conn.Close()
+
+					client := pb2.NewNodeServiceClient(conn)
+
+					ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+					defer cancel()
+
+					propuesta := GenerarPropuesta(int(total)) // Con esta funcion generaremos la propuesta
+					msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo} // generamos el mensaje con la propuesta
+
+					resp, err := client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
+					//estado := resp.GetMsg()
+					fmt.Println(resp.GetProp())
+
+					if resp.GetMsg() == false{  // cuando se rechaza la propuesta, la actualizamos con la propuesta recibida x namenode
+						break 
+					}
+
+				}
+			}
+
+			/* GENERAR DISTRIBUCION*/
+			/* Leemos el arrigo de propuesta que tiene las designaciones de cada chunk que ira a cada datanode*/
+			for i,j :=range propuesta{
+				if this_datanode==datanode[j]{ //claramente, si un chunk se debe quedar en este datanode, para que enviarlo XD
+					SaveChunk(chunks[i],nombrearchivo+"_"+strconv.Itoa(i)) // Simplemente lo guardamos con la funcion savechunk
+					continue
+				}
+				// Procedemos a generar la conexion con el datanode a donde enviaremos el chunk
+				conn, err := grpc.Dial(datanode[j], grpc.WithInsecure())
+				if err != nil {
+					fmt.Println("Proceso abortado, se ha desconectado el nodo durante la distribucion")
+					break
+				}
+				defer conn.Close()
+		
+				client := pb2.NewNodeServiceClient(conn)
+		
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				// Creamos el mensaje con el chunk correspondiente + el nombre del chunk 
+				msg:= &pb2.DistribucionRequest{Chunk: chunks[i], Name: nombrearchivo+"_"+strconv.Itoa(i)}
+				
+				// Enviamos el chunk
+				_, err = client.Distribucion(ctx, msg)
+				if err != nil {
+					continue
+				}
+			}
+
+			chunks = [][]byte{}
+			return &pb.UploadChunksResponse{Resp : "El servidor guardo el archivo", }, nil //Avisamos de que estamos ok con la subida
+		}
+
+		return &pb.UploadChunksResponse{Resp : "chunk recibido en el server", }, nil
+
 	}
 	
 	return &pb.UploadChunksResponse{Resp : "Fallo algo", }, nil
 }
+
+
 
 func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {
 	return &pb2.AliveResponse{Msg : "Im Alive, datanode1", }, nil
