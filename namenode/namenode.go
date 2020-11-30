@@ -28,6 +28,7 @@ var nombrearchivo string
 var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
 var datanodestatus = []bool{false,false,false}
 var activos []int
+var tipo_distribucion string
 
 func Unchunker(name string){
 	_, err := os.Create(name)
@@ -273,7 +274,11 @@ func (s *server) LocationsofChunks(ctx context.Context, msg *pb.LoCRequest) (*pb
 
 	return &pb.LoCResponse{Location: BuscarChunks(msg.GetReq())} , nil
 }
-
+func (s *server) TypeDis(ctx context.Context, msg *pb.TypeRequest) (*pb.TypeResponse, error) {
+	tipo_distribucion = msg.GetType()
+	fmt.Println("Tipo distribucion: ", tipo_distribucion)
+	return &pb.TypeResponse{Resp: "ok" }, nil
+}
 
 
 func main()  {

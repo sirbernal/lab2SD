@@ -301,8 +301,14 @@ func (s *server) LocationsofChunks(ctx context.Context, msg *pb.LoCRequest) (*pb
 	return &pb.LoCResponse{Location: []int64{} }, nil
 }
 
+func (s *server) TypeDis(ctx context.Context, msg *pb.TypeRequest) (*pb.TypeResponse, error) {
+	tipo_distribucion = msg.GetType()
+	fmt.Println("Tipo distribucion: ", tipo_distribucion)
+	return &pb.TypeResponse{Resp: "ok" }, nil
+}
+
 func main() {
-	tipo_distribucion = "centralizado"
+	
 	
 	lis, err := net.Listen("tcp", ":50052")
 	if err != nil {

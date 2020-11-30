@@ -48,9 +48,15 @@ message LoCResponse {
     repeated int64 location = 1;
 }
 
-
+message TypeRequest {
+    string type = 1;
+}
+message TypeResponse {
+    string resp = 2;
+}
 
 service ClientService {
+    rpc TypeDis (TypeRequest) returns (TypeResponse) {}
     rpc Upload (UploadRequest) returns (UploadResponse) {}
     rpc UploadChunks (UploadChunksRequest) returns (UploadChunksResponse) {}
     rpc DownloadNames (DownloadNamesRequest) returns (DownloadNamesResponse) {}

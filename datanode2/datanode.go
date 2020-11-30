@@ -24,10 +24,10 @@ var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
 var total int64 
 var nombrearchivo string
 var cont int64
+var chunks [][]byte
 var tipo_distribucion string
 var this_datanode = datanode[1]
 
-var chunks [][]byte
 /* func Unchunker(name string){
 	_, err := os.Create(name)
 	if err != nil {
@@ -110,6 +110,7 @@ func (s *server) Upload(ctx context.Context, msg *pb.UploadRequest) (*pb.UploadR
 	fmt.Println(msg.GetTotalchunks())
 	return &pb.UploadResponse{Resp : int64(0), }, nil
 }
+
 
 func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) (*pb.UploadChunksResponse, error) {
 	fmt.Println(len(chunks))
@@ -267,8 +268,6 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 	return &pb.UploadChunksResponse{Resp : "Fallo algo", }, nil
 }
 
-
-
 func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {
 	return &pb2.AliveResponse{Msg : "Im Alive, datanode1", }, nil
 }
@@ -280,6 +279,7 @@ func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2
 
 	return &pb2.PropuestaResponse{Msg : true,}, nil
 }
+
 func (s *server) Distribucion(ctx context.Context, msg *pb2.DistribucionRequest) (*pb2.DistribucionResponse, error) {
 	
 	SaveChunk(msg.GetChunk(),msg.GetName())
@@ -295,13 +295,20 @@ func (s *server) DownloadChunks(ctx context.Context, msg *pb.DownloadChunksReque
 
 	return &pb.DownloadChunksResponse{Chunk : SearchChunk(msg.GetName()) }, nil
 }
+
 func (s *server) LocationsofChunks(ctx context.Context, msg *pb.LoCRequest) (*pb.LoCResponse, error) {
 
 	return &pb.LoCResponse{Location: []int64{} }, nil
 }
 
+func (s *server) TypeDis(ctx context.Context, msg *pb.TypeRequest) (*pb.TypeResponse, error) {
+	tipo_distribucion = msg.GetType()
+	fmt.Println("Tipo distribucion: ", tipo_distribucion)
+	return &pb.TypeResponse{Resp: "ok" }, nil
+}
 
 func main() {
+	
 	
 	lis, err := net.Listen("tcp", ":50053")
 	if err != nil {

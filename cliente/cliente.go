@@ -17,6 +17,9 @@ import (
 	"google.golang.org/grpc"
 )
 var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
+var directions = []string{"localhost:50055", "localhost:50052","localhost:50053","localhost:50054"}
+
+
 var chunks [][]byte //donde guardo los chunks para subir
 var rechunks [][]byte //donde guardo los chunks para bajar
 var tipo_distribucion string
@@ -275,9 +278,53 @@ func menu(){
 				continue
 			}
 		if menu1=="1"{
+			tipo_distribucion = "centralizado"
+			
+			for _, dire := range directions{
+				conn, err := grpc.Dial(dire, grpc.WithInsecure())
+				if err != nil {
+					fmt.Println("No esta el nodo")
+					continue
+				}
+				defer conn.Close()
+
+				client := pb.NewClientServiceClient(conn)
+
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				msg:= &pb.TypeRequest{Type: tipo_distribucion }
+
+				_, err = client.TypeDis(ctx, msg)
+				if err != nil {
+					fmt.Println("No esta el nodo")
+					continue
+					}
+			}
 			menu_centralizado()
 			break
 		}else if menu1=="2"{
+			tipo_distribucion = "distribuido"
+			
+			for _, dire := range directions{
+				conn, err := grpc.Dial(dire, grpc.WithInsecure())
+				if err != nil {
+					fmt.Println("No esta el nodo")
+					continue
+				}
+				defer conn.Close()
+
+				client := pb.NewClientServiceClient(conn)
+
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				msg:= &pb.TypeRequest{Type: tipo_distribucion }
+
+				_, err = client.TypeDis(ctx, msg)
+				if err != nil {
+					fmt.Println("No esta el nodo")
+					continue
+					}
+			}
 			menu_distribuido()
 			break
 		}else{
