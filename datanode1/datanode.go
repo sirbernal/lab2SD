@@ -301,7 +301,6 @@ func (s *server) LocationsofChunks(ctx context.Context, msg *pb.LoCRequest) (*pb
 	return &pb.LoCResponse{Location: []int64{} }, nil
 }
 
-
 func main() {
 	tipo_distribucion = "centralizado"
 	

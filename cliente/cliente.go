@@ -19,6 +19,7 @@ import (
 var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
 var chunks [][]byte //donde guardo los chunks para subir
 var rechunks [][]byte //donde guardo los chunks para bajar
+var tipo_distribucion string
 
 type ChunkAndN struct{
 	Chunk []byte
@@ -80,7 +81,7 @@ func Unchunker(name string){
 	rechunks = [][]byte{}
 }
 
-func SolicitarLibros(){
+func SolicitarLibros()[]string{
 	conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalln(err)
@@ -94,10 +95,11 @@ func SolicitarLibros(){
 	msg:= &pb.DownloadNamesRequest{Req: "Libros",}
 	resp, err := client.DownloadNames(ctx, msg)
 	
-	fmt.Println("Libro(s) disponible(s)")
-	for _,name:=range resp.GetNames(){
-		fmt.Println(name)
+	fmt.Println("Archivos(s) disponible(s)")
+	for i,name:=range resp.GetNames(){
+		fmt.Println(strconv.Itoa(i+1)+".-"+name)
 	}
+	return resp.GetNames()
 }
 func SolicitarUbicacion(libro string)([]int64){
 	conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
@@ -150,9 +152,143 @@ func DescargarChunks(name string, prop []int64){
 	//fmt.Println(rechunks)
 	Unchunker(name)
 }
+func SubirArchivo(node int, archivo string)(){
+	conn, err := grpc.Dial(datanode[node], grpc.WithInsecure())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer conn.Close()
 
-
+	client := pb.NewClientServiceClient(conn)
+    
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	chunks := Chunker("./"+archivo)
+	msg:= &pb.UploadRequest{Tipo: 0, Nombre: archivo, Totalchunks: int64(len(chunks))}
+	resp, err := client.Upload(ctx, msg)
+	fmt.Println(len(chunks))
+	if resp.GetResp()==int64(0){
+		for i,chunk :=range chunks{
+			msg:= &pb.UploadChunksRequest{Chunk: chunk.Chunk[:chunk.N]}
+			resp, err := client.UploadChunks(ctx, msg)
+			if err != nil {
+				log.Fatalf("can not receive %v", err)
+			}
+			if i==(len(chunks)-1){
+				fmt.Println("aqui avisa q mando todo al namenode y manda el len")
+			}
+			fmt.Println(resp.GetResp()) 
+		}	
+	}
+}
+func menu_centralizado(){
+	var menu2 string
+	Menu2:
+		for {
+			fmt.Print("\n\n---Menu Algoritmo de Exclusión Mutua Centralizada--- \nIngrese opción\n1.-Subir Archivo\n2.-Ver archivos en sistema\n3.-Cerrar Sistema\nIngrese opción:")
+			_,err:=fmt.Scanln(&menu2)
+				if err!=nil{
+					fmt.Print("\nFormato de ingreso no válido, pruebe nuevamente...")
+					continue
+				}
+			switch menu2{
+			case "1": 
+				var datasubida string
+				var dataint int
+				fmt.Println("--Lista de Datanodes--")
+				for i,j:= range datanode{
+					fmt.Println(strconv.Itoa(i+1)+".- Datanode "+strconv.Itoa(i+1)+" Ip:"+j)
+				}
+				for {
+					fmt.Print("Seleccione un datanode:")
+					_,err:=fmt.Scanln(&datasubida)
+					if err!=nil{
+						fmt.Println("Formato no válido, pruebe nuevamente...")
+						continue
+					}
+					dataint,err=strconv.Atoi(datasubida)
+					if err!=nil{
+						fmt.Println("Formato no válido, pruebe nuevamente...")
+						continue
+					}
+					if dataint>0 && dataint<len(datanode)+1{
+						break
+					}else{
+						fmt.Println("Opción no válida, pruebe nuevamente...")
+					}
+				}
+				var archivo string
+				fmt.Print("Ingrese nombre de archivo con su extension(ejemplo: archivo.pdf):")
+				fmt.Scanln(&archivo)
+				SubirArchivo(dataint-1,archivo)
+			case "2":
+				libros:=SolicitarLibros()
+				if len(libros)==0{
+					fmt.Println("\n\nSistema sin archivos disponibles")
+					continue Menu2
+				}
+				var opt string
+				var optint int
+				for{
+					fmt.Print("Seleccione un archivo para descargar o escriba 'n' para volver: ")
+					_,err:=fmt.Scanln(&opt)
+					if err!=nil{
+						fmt.Println("Formato no válido, pruebe nuevamente...")
+						continue
+					}
+					if opt=="n"{
+						continue Menu2
+					}
+					optint,err=strconv.Atoi(opt)
+					if err!=nil{
+						fmt.Println("Formato no válido, pruebe nuevamente...")
+						continue
+					}
+					if optint>0 && optint<len(libros)+1{
+						break
+					}else{
+						fmt.Println("Opción no válida, pruebe nuevamente...")
+					}
+				}
+				fmt.Print("Descargando archivo: "+libros[optint-1])
+				ubicacion := SolicitarUbicacion(libros[optint-1])
+				DescargarChunks(libros[optint-1], ubicacion)
+			case "3":
+				fmt.Println("Terminando ejecución cliente...")
+				break Menu2
+			default:
+				fmt.Println("\nFormato u opción no válida, pruebe nuevamente:\n\n")
+				continue Menu2
+			}
+		}
+}
+func menu_distribuido(){
+	fmt.Println("Aqui deberia aplicarle el ricky wala")
+}
+func menu(){
+	var menu1 string
+	for {
+		fmt.Print("\n\n---Menu Principal--- \nIngrese que algoritmo de exclusión mutua desea experimentar\n1.-Algoritmo de Exclusión Mutua Centralizada\n2.-Algoritmo de Exclusión Mutua Distribuida\nIngrese opción:")
+		_,err:=fmt.Scanln(&menu1)
+			if err!=nil{
+				fmt.Print("\nFormato de ingreso no válido, pruebe nuevamente:")
+				continue
+			}
+		if menu1=="1"{
+			menu_centralizado()
+			break
+		}else if menu1=="2"{
+			menu_distribuido()
+			break
+		}else{
+			fmt.Println("\nFormato u opción no válida, pruebe nuevamente:\n\n")
+			continue
+		}
+	}
+}
 func main() {
+	menu()
+	return
 	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalln(err)
