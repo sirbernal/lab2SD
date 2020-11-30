@@ -31,8 +31,6 @@ var this_datanode = datanode[0]
 var activos []int
 var datanodestatus = []bool{false,false,false}
 //BORRAR VARIABLES TEMPORALES
-var registroname []string
-var registroprop [][]int64
 /* func Unchunker(name string){
 	_, err := os.Create(name)
 	if err != nil {
@@ -200,9 +198,11 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 			datanode y volvemos a realizarlo con una nueva propuesta, para eso usamos una variable booleana
 			proceso que cuando se aceptan todas las propuestas, recien procederiamos a distribuir */
 			var propuesta []int64
+			propuesta = GenerarPropuesta(int(total))// Con esta funcion generaremos la propuesta
 			var contador int64
 			Proceso:
 			for{
+				AllAlive([]int64{})
 				for _,dire:= range datanode{
 					/* GENERAR PROPUESTA*/
 					/* Primero, generamos la conexion con cada datanode*/
@@ -211,7 +211,7 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 					}
 					conn, err := grpc.Dial(dire, grpc.WithInsecure()) // enviamos propuesta a un nodo especifico
 					if err != nil {
-						log.Fatalln(err)
+						continue
 					}
 					defer conn.Close()
 
@@ -220,7 +220,6 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 					ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 					defer cancel()
 
-					propuesta := GenerarPropuesta(int(total)) // Con esta funcion generaremos la propuesta
 					msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo} // generamos el mensaje con la propuesta
 
 					resp, err := client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
@@ -228,7 +227,6 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 					fmt.Println(resp.GetProp())
 
 					if resp.GetMsg() == false{  // cuando se rechaza la propuesta, la actualizamos con la propuesta recibida x namenode	
-						
 						propuesta=GenerarPropuestaNueva(len(propuesta),TotalConectados())
 						contador = 0
 						break
@@ -238,6 +236,7 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 				if int(contador)==TotalConectados()-1{
 					break Proceso
 				}
+				contador=0
 			}
 
 			/* GENERAR DISTRIBUCION*/
@@ -281,35 +280,9 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 }
 
 func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {
-	return &pb2.AliveResponse{Msg : "Im Alive, datanode1", }, nil
+	return &pb2.AliveResponse{Msg : "Im Alive, datanode", }, nil
 }
-func GuardarPropuesta(name string, partes []int64){
-	registroname=append(registroname,name)
-	registroprop=append(registroprop,partes)
-	ActualizarRegistro()
-}
-func ActualizarRegistro(){
-	file,err:= os.OpenFile("registro.txt",os.O_CREATE|os.O_WRONLY,0777) //actualiza archivo de registro
-	defer file.Close()
-	if err !=nil{
-		os.Exit(1)
-	}
-	for i,propuesta :=range registroprop{
-		word:=registroname[i]+" Cantidad_Partes_"+strconv.Itoa(len(propuesta))
-		_, err := file.WriteString(word + "\n")
-		if err != nil {
-			log.Fatal(err)
-		}
-		for j,node:= range propuesta{
-			word="parte_"+strconv.Itoa(j)+" "+datanode[int(node)]
-			_, err := file.WriteString(word + "\n")
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-	}
-	file.Close()
-}
+
 func TotalConectados()int{
 	activos= []int{}
 	cont:=0
@@ -373,6 +346,14 @@ func GenerarPropuestaNueva (total int, conectados int)([]int64){
 		return propuesta
 	}
 }
+func VerifProp(prop []int64)bool{
+	for _,chunk:=range prop{
+		if !datanodestatus[chunk]{
+			return false
+		}
+	}
+	return true
+}
 
 func AllAlive (prop []int64) (bool){
 
@@ -400,36 +381,24 @@ func AllAlive (prop []int64) (bool){
 		datanodestatus[j]=true
 		fmt.Println(resp.GetMsg())
 	}
-	
-	if reflect.DeepEqual(datanodestatus,[]bool{true,true,true}){
-		fmt.Println("Todos los datanodes estan vivos")
+	if reflect.DeepEqual==[]int64{}{
 		return true
-	}else{
+	}
+	if !VerifProp(prop){
 		return false
 	}
+	return true
 }
-
-
-
 
 func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2.PropuestaResponse, error) {
-	
-	/* RECEPCION DE PROPUESTA DE DATANODE */
-
-	fmt.Println("Recibida propuesta!")
-	fmt.Println(msg.GetProp())
-
-	/* VERIFICAR QUE LOS NODOS DE LA PROPUESTA ESTEN ALIVE*/
-	/* Si todos los nodos de la propuesta estan conectados, acepta*/
-	if AllAlive() {
+	if AllAlive(msg.GetProp()) {
 		return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
-	} else {
-		var temp []int64{}
-		 
+	} else {		
 		return &pb2.PropuestaResponse{Msg : false, Prop : []int64{}}, nil
 	}
-		
 }
+
+
 
 func (s *server) Distribucion(ctx context.Context, msg *pb2.DistribucionRequest) (*pb2.DistribucionResponse, error) {
 	
