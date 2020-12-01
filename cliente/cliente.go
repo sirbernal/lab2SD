@@ -268,6 +268,7 @@ func menu_centralizado(){
 }
 func menu_distribuido(){
 	fmt.Println("Aqui deberia aplicarle el ricky wala")
+	menu_centralizado()
 }
 func DistribStatus()int{ //0 estan sin modo, 1 esta centralizado, 2 esta distribuido, 3 fallo todo
 	cent:=0

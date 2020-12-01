@@ -185,7 +185,7 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 		/* GENERAR DISTRIBUCION*/
 		/* Leemos el arrigo de propuesta que tiene las designaciones de cada chunk que ira a cada datanode*/
 		for i,j :=range propuesta{
-			if datanode[0]==datanode[j]{ //claramente, si un chunk se debe quedar en este datanode, para que enviarlo XD
+			if this_datanode==datanode[j]{ //claramente, si un chunk se debe quedar en este datanode, para que enviarlo XD
 				SaveChunk(chunks[i],nombrearchivo+"_"+strconv.Itoa(i)) // Simplemente lo guardamos con la funcion savechunk
 				continue
 			}
@@ -220,30 +220,32 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 		return &pb.UploadChunksResponse{Resp : "chunk recibido en el server", }, nil
 
 		
-	}else if tipo_distribucion == "distribuida" {
+	}else if tipo_distribucion == "distribuido" {
 		chunks=append(chunks,msg.GetChunk()) // Agregamos el chunk a nuestro arreglo
 
 		if int64(len(chunks))==total{// Cuando llegan todos los chunks del archivo al datanode, realizamos propuesta
 			
-		
 			/* Logica de esto, es que si una propuesta se rechaza, pues hay que volver a realizar una
 			nueva propuesta, por lo que rompemos el segundo for que esta hecho para enviar la propuesta a cada
 			datanode y volvemos a realizarlo con una nueva propuesta, para eso usamos una variable booleana
 			proceso que cuando se aceptan todas las propuestas, recien procederiamos a distribuir */
 			var propuesta []int64
 			propuesta = GenerarPropuesta(int(total))// Con esta funcion generaremos la propuesta
-			var contador int64
+			var contador int
 			Proceso:
 			for{
+				fmt.Println(propuesta)
 				AllAlive([]int64{})
 				for _,dire:= range datanode{
 					/* GENERAR PROPUESTA*/
 					/* Primero, generamos la conexion con cada datanode*/
 					if this_datanode == dire{ // No enviaremos a este mismo nodo la propuesta a generar
+						contador++
 						continue
 					}
 					conn, err := grpc.Dial(dire, grpc.WithInsecure()) // enviamos propuesta a un nodo especifico
 					if err != nil {
+						fmt.Println("i am moricido")
 						continue
 					}
 					defer conn.Close()
@@ -257,20 +259,23 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 
 					resp, err := client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
 					//estado := resp.GetMsg()
-					fmt.Println(resp.GetProp())
-
+					fmt.Println(resp.GetProp(),resp.GetMsg(),contador,dire)
 					if resp.GetMsg() == false{  // cuando se rechaza la propuesta, la actualizamos con la propuesta recibida x namenode	
 						propuesta=GenerarPropuestaNueva(len(propuesta),TotalConectados())
 						contador = 0
 						break
+					}else{
+						contador++
 					}
-					contador++
+					
 				}
-				if int(contador)==TotalConectados()-1{
+				fmt.Println(contador,TotalConectados())
+				if int(contador)==TotalConectados(){
 					break Proceso
 				}
 				contador=0
 			}
+			fmt.Println(propuesta,"salí watcho")
 			//Enviar mensaje a namenode con la propuesta aceptada por nodos 
 
 			// Usar algoritmo de Ricart y Agrawala para pedir permisos de acceso a namenode
@@ -278,6 +283,7 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 			ocupado = true
 			/* Si se tiene aprobacion de los demas nodos para contactar namenode, procedera a contactarlo
 			en caso contrario, estara consultando constantemente a la autorizacion de los demas nodos*/
+			fmt.Println("te paseo ricarty")
 			for !RicartyAgrawala(){} 
 			
 		
@@ -443,11 +449,14 @@ func AllAlive (prop []int64) (bool){
 		fmt.Println(resp.GetMsg())
 	}
 	if reflect.DeepEqual(prop, []int64{}){
+		fmt.Println("esta wea esta mala")
 		return true
 	}
 	if !VerifProp(prop){
+		fmt.Println("cago la verificacion")
 		return false
 	}
+	fmt.Println("ta todo weno")
 	return true
 }
 
@@ -500,6 +509,7 @@ func (s *server) RicandAgra(ctx context.Context, msg *pb2.RicandAgraRequest) (*p
 	}
 	
 }
+
 
 func main() {
 	
