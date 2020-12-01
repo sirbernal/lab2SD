@@ -54,7 +54,7 @@ message StatusRequest {
 }
 
 message StatusResponse {
-    bool resp = 1;
+    int64 resp = 1;
 
 
 }
