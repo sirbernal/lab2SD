@@ -1,5 +1,0 @@
-ejemplo.pdf Cantidad_Partes_4
-parte_0 localhost:50054
-parte_1 localhost:50053
-parte_2 localhost:50054
-parte_3 localhost:50053
