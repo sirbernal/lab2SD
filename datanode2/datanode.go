@@ -24,6 +24,7 @@ type server struct {
 var ocupado = false
 var id_node = 2
 var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
+var directions = []string{"localhost:50055", "localhost:50052","localhost:50053","localhost:50054"}
 var total int64 
 var nombrearchivo string
 var cont int64
@@ -158,9 +159,26 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 
 		if int64(len(chunks))==total{ // Cuando llegan todos los chunks del archivo al datanode, realizamos propuesta
 			
-			/* GENERAR PROPUESTA*/
+			for{
+				conn, err := grpc.Dial(directions[0], grpc.WithInsecure())
+				if err != nil {
+					log.Fatalln(err)
+				}
+				defer conn.Close()
+				client := pb2.NewNodeServiceClient(conn)
+
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel() // Con esta funcion generaremos la propuesta
+				msg:= &pb2.StatusRequest{Id: 1} // generamos el mensaje con la propuesta
+				resp, err := client.Status(ctx, msg)
+				if resp.GetResp()==1{
+					break
+				}
+				fmt.Println("no puedo salir del loop")
+			}	
+				/* GENERAR PROPUESTA*/
 			/* Primero, generamos la conexion con namenode*/
-			conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
+			conn, err := grpc.Dial(directions[0], grpc.WithInsecure())
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -180,8 +198,12 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 
 			if resp.GetMsg() == false{  // cuando se rechaza la propuesta, la actualizamos con la propuesta recibida x namenode
 				propuesta = resp.GetProp()
-		}
-
+			}
+			msg2:= &pb2.StatusRequest{Id: 2} // generamos el mensaje con la propuesta
+			_, err=client.Status(ctx, msg2)
+			if err != nil {
+				log.Fatalln(err)
+			}
 		/* GENERAR DISTRIBUCION*/
 		/* Leemos el arrigo de propuesta que tiene las designaciones de cada chunk que ira a cada datanode*/
 		for i,j :=range propuesta{
@@ -270,10 +292,6 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 					}else{
 						contador++
 					}
-					if int(contador)==TotalConectados(){
-						break
-					}
-					
 				}
 				fmt.Println(contador,TotalConectados())
 				if int(contador)==TotalConectados(){
@@ -351,7 +369,6 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 	
 	return &pb.UploadChunksResponse{Resp : "Fallo algo", }, nil
 }
-
 func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {
 	return &pb2.AliveResponse{Msg : "Im Alive, datanode", }, nil
 }
@@ -515,15 +532,64 @@ func (s *server) RicandAgra(ctx context.Context, msg *pb2.RicandAgraRequest) (*p
 	}
 	
 }
+
 func (s *server) Status(ctx context.Context, msg *pb2.StatusRequest) (*pb2.StatusResponse, error) {
-
-	return &pb2.RicandAgraResponse{Resp: true }, nil
-
+	//0.- Retorna tipo de distribucion 1.- Informa libertad del namenode/centralizado
+	switch msg.GetId(){
+	case 0:
+		if tipo_distribucion=="centralizado"{
+			return &pb2.StatusResponse{Resp: 0 }, nil
+		}else if tipo_distribucion=="distribuido"{
+			return &pb2.StatusResponse{Resp: 1 }, nil
+		}else{
+			return &pb2.StatusResponse{Resp: 2 }, nil
+		}
+	default: 
+		return &pb2.StatusResponse{Resp: -1 }, nil
+	}
+	return &pb2.StatusResponse{Resp: -1 }, nil
 	
 }
+func InicioTipo(){
+	initipo:= []bool{false,false}  // centralizado,distribuido
+	for _,dire :=range directions{
+		if dire==this_datanode{
+			continue
+		}
+		conn, err := grpc.Dial(dire, grpc.WithInsecure())
+		if err != nil {
+			continue
+		}
+		defer conn.Close()
 
+		client := pb2.NewNodeServiceClient(conn)
 
-
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		msg:= &pb2.StatusRequest{Id: 0}
+		resp, err := client.Status(ctx, msg)
+		if err != nil {
+			//fmt.Println("No esta el datanode", j+1)
+			continue
+		}
+		if resp.GetResp()==0{
+			initipo[0]=true
+		}else if resp.GetResp()==1{
+			initipo[1]=true
+		}
+	}
+	if !initipo[0] && !initipo[1]{
+		fmt.Println("Aun sin tipo de distribucion")
+	}else if initipo[0] && !initipo[1]{
+		fmt.Println("Centralizado detectado")
+		tipo_distribucion="centralizado"
+	}else if !initipo[0] && initipo[1]{
+		fmt.Println("Distribuido detectado")
+		tipo_distribucion="distribuido"
+	}else{
+		fmt.Println("tiene la cagaa en los nodos, reinicie todo")
+	}
+}
 func main() {
 	
 	
@@ -532,6 +598,7 @@ func main() {
 		log.Fatal("Error conectando: %v", err)
 	}
 	s := grpc.NewServer()
+	InicioTipo()
 	pb.RegisterClientServiceServer(s, &server{})
 	pb2.RegisterNodeServiceServer(s, &server{}) //recibe conexión con el camion
 	if err := s.Serve(lis); err != nil {
