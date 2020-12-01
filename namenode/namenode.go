@@ -291,6 +291,12 @@ func (s *server) RicandAgra(ctx context.Context, msg *pb2.RicandAgraRequest) (*p
 
 	return &pb2.RicandAgraResponse{Resp: "mensaje" , Id: int64(1)}, nil
 }
+func (s *server) Status(ctx context.Context, msg *pb2.StatusRequest) (*pb2.StatusResponse, error) {
+
+	return &pb2.RicandAgraResponse{Resp: true }, nil
+
+	
+}
 
 
 func main()  {

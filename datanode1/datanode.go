@@ -512,6 +512,22 @@ func (s *server) RicandAgra(ctx context.Context, msg *pb2.RicandAgraRequest) (*p
 	
 }
 
+func (s *server) RicandAgra(ctx context.Context, msg *pb2.RicandAgraRequest) (*pb2.RicandAgraResponse, error) {
+	if ocupado == false {
+		return &pb2.RicandAgraResponse{Resp: "mensaje" , Id: int64(id_node)}, nil
+	} else {
+		return &pb2.RicandAgraResponse{Resp: "ocupado" , Id: int64(id_node)}, nil
+	}
+	
+}
+
+func (s *server) Status(ctx context.Context, msg *pb2.StatusRequest) (*pb2.StatusResponse, error) {
+
+	return &pb2.RicandAgraResponse{Resp: true }, nil
+
+	
+}
+
 func main() {
 	
 	
