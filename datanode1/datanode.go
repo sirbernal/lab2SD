@@ -21,6 +21,8 @@ type server struct {
 }
 
 //namenode := "10.10.28.81:50051"
+var ocupado = false
+var id_node = 3
 var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
 var total int64 
 var nombrearchivo string
@@ -112,6 +114,37 @@ func (s *server) Upload(ctx context.Context, msg *pb.UploadRequest) (*pb.UploadR
 	fmt.Println(msg.GetNombre())
 	fmt.Println(msg.GetTotalchunks())
 	return &pb.UploadResponse{Resp : int64(0), }, nil
+}
+
+func RicartyAgrawala()bool{
+	
+	for _,dire:= range datanode{
+		if this_datanode == dire{ // Solo contactaremos con nodos distintos al nuestro
+			continue
+		}
+		conn, err := grpc.Dial(dire, grpc.WithInsecure()) // enviamos propuesta a un nodo especifico
+		if err != nil {
+			continue
+		}
+		defer conn.Close()
+
+		client := pb2.NewNodeServiceClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		msg:= &pb2.RicandAgraRequest{Id: int64(id_node)} // generamos el mensaje con la propuesta
+
+		resp, err := client.RicandAgra(ctx, msg) // enviamos la propuesta y recibimos la respuesta
+
+		if resp.GetResp() != "mensaje"{
+			if resp.GetId() > int64(id_node){
+				return false
+			}
+		}
+
+	}
+	return true
 }
 
 
@@ -238,6 +271,34 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 				}
 				contador=0
 			}
+			//Enviar mensaje a namenode con la propuesta aceptada por nodos 
+
+			// Usar algoritmo de Ricart y Agrawala para pedir permisos de acceso a namenode
+
+			ocupado = true
+			/* Si se tiene aprobacion de los demas nodos para contactar namenode, procedera a contactarlo
+			en caso contrario, estara consultando constantemente a la autorizacion de los demas nodos*/
+			for !RicartyAgrawala(){} 
+			
+		
+			conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
+			if err != nil {
+				log.Fatalln(err)
+			}
+			defer conn.Close()
+
+			client := pb2.NewNodeServiceClient(conn)
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+
+			msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo} // enviamos propuesta a namenode para que la escriba
+
+			_, err = client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
+
+			ocupado = false
+
+
 
 			/* GENERAR DISTRIBUCION*/
 			/* Leemos el arrigo de propuesta que tiene las designaciones de cada chunk que ira a cada datanode*/
@@ -381,7 +442,7 @@ func AllAlive (prop []int64) (bool){
 		datanodestatus[j]=true
 		fmt.Println(resp.GetMsg())
 	}
-	if reflect.DeepEqual==[]int64{}{
+	if reflect.DeepEqual(prop, []int64{}){
 		return true
 	}
 	if !VerifProp(prop){
@@ -429,6 +490,15 @@ func (s *server) TypeDis(ctx context.Context, msg *pb.TypeRequest) (*pb.TypeResp
 		fmt.Println("Tipo distribucion: ", tipo_distribucion)
 	}
 	return &pb.TypeResponse{Resp: "ok" }, nil
+}
+
+func (s *server) RicandAgra(ctx context.Context, msg *pb2.RicandAgraRequest) (*pb2.RicandAgraResponse, error) {
+	if ocupado == false {
+		return &pb2.RicandAgraResponse{Resp: "mensaje" , Id: int64(id_node)}, nil
+	} else {
+		return &pb2.RicandAgraResponse{Resp: "ocupado" , Id: int64(id_node)}, nil
+	}
+	
 }
 
 func main() {

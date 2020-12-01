@@ -21,6 +21,8 @@ type server struct {
 }
 
 //namenode := "10.10.28.81:50051"
+var ocupado = false
+var id_node = 2
 var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
 var total int64 
 var nombrearchivo string
@@ -31,8 +33,6 @@ var this_datanode = datanode[1]
 var activos []int
 var datanodestatus = []bool{false,false,false}
 //BORRAR VARIABLES TEMPORALES
-var registroname []string
-var registroprop [][]int64
 /* func Unchunker(name string){
 	_, err := os.Create(name)
 	if err != nil {
@@ -114,6 +114,37 @@ func (s *server) Upload(ctx context.Context, msg *pb.UploadRequest) (*pb.UploadR
 	fmt.Println(msg.GetNombre())
 	fmt.Println(msg.GetTotalchunks())
 	return &pb.UploadResponse{Resp : int64(0), }, nil
+}
+
+func RicartyAgrawala()bool{
+	
+	for _,dire:= range datanode{
+		if this_datanode == dire{ // Solo contactaremos con nodos distintos al nuestro
+			continue
+		}
+		conn, err := grpc.Dial(dire, grpc.WithInsecure()) // enviamos propuesta a un nodo especifico
+		if err != nil {
+			continue
+		}
+		defer conn.Close()
+
+		client := pb2.NewNodeServiceClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		msg:= &pb2.RicandAgraRequest{Id: int64(id_node)} // generamos el mensaje con la propuesta
+
+		resp, err := client.RicandAgra(ctx, msg) // enviamos la propuesta y recibimos la respuesta
+
+		if resp.GetResp() != "mensaje"{
+			if resp.GetId() > int64(id_node){
+				return false
+			}
+		}
+
+	}
+	return true
 }
 
 
@@ -200,8 +231,11 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 			datanode y volvemos a realizarlo con una nueva propuesta, para eso usamos una variable booleana
 			proceso que cuando se aceptan todas las propuestas, recien procederiamos a distribuir */
 			var propuesta []int64
-			proceso := true  
-			for proceso{
+			propuesta = GenerarPropuesta(int(total))// Con esta funcion generaremos la propuesta
+			var contador int64
+			Proceso:
+			for{
+				AllAlive([]int64{})
 				for _,dire:= range datanode{
 					/* GENERAR PROPUESTA*/
 					/* Primero, generamos la conexion con cada datanode*/
@@ -210,7 +244,7 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 					}
 					conn, err := grpc.Dial(dire, grpc.WithInsecure()) // enviamos propuesta a un nodo especifico
 					if err != nil {
-						log.Fatalln(err)
+						continue
 					}
 					defer conn.Close()
 
@@ -219,19 +253,52 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 					ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 					defer cancel()
 
-					propuesta := GenerarPropuesta(int(total)) // Con esta funcion generaremos la propuesta
 					msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo} // generamos el mensaje con la propuesta
 
 					resp, err := client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
 					//estado := resp.GetMsg()
 					fmt.Println(resp.GetProp())
 
-					if resp.GetMsg() == false{  // cuando se rechaza la propuesta, la actualizamos con la propuesta recibida x namenode
-						break 
+					if resp.GetMsg() == false{  // cuando se rechaza la propuesta, la actualizamos con la propuesta recibida x namenode	
+						propuesta=GenerarPropuestaNueva(len(propuesta),TotalConectados())
+						contador = 0
+						break
 					}
-
+					contador++
 				}
+				if int(contador)==TotalConectados()-1{
+					break Proceso
+				}
+				contador=0
 			}
+			//Enviar mensaje a namenode con la propuesta aceptada por nodos 
+
+			// Usar algoritmo de Ricart y Agrawala para pedir permisos de acceso a namenode
+
+			ocupado = true
+			/* Si se tiene aprobacion de los demas nodos para contactar namenode, procedera a contactarlo
+			en caso contrario, estara consultando constantemente a la autorizacion de los demas nodos*/
+			for !RicartyAgrawala(){} 
+			
+		
+			conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
+			if err != nil {
+				log.Fatalln(err)
+			}
+			defer conn.Close()
+
+			client := pb2.NewNodeServiceClient(conn)
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+
+			msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo} // enviamos propuesta a namenode para que la escriba
+
+			_, err = client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
+
+			ocupado = false
+
+
 
 			/* GENERAR DISTRIBUCION*/
 			/* Leemos el arrigo de propuesta que tiene las designaciones de cada chunk que ira a cada datanode*/
@@ -274,35 +341,9 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 }
 
 func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {
-	return &pb2.AliveResponse{Msg : "Im Alive, datanode1", }, nil
+	return &pb2.AliveResponse{Msg : "Im Alive, datanode", }, nil
 }
-func ActualizarRegistro(){
-	file,err:= os.OpenFile("registro.txt",os.O_CREATE|os.O_WRONLY,0777) //actualiza archivo de registro
-	defer file.Close()
-	if err !=nil{
-		os.Exit(1)
-	}
-	for i,propuesta :=range registroprop{
-		word:=registroname[i]+" Cantidad_Partes_"+strconv.Itoa(len(propuesta))
-		_, err := file.WriteString(word + "\n")
-		if err != nil {
-			log.Fatal(err)
-		}
-		for j,node:= range propuesta{
-			word="parte_"+strconv.Itoa(j)+" "+datanode[int(node)]
-			_, err := file.WriteString(word + "\n")
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-	}
-	file.Close()
-}
-func GuardarPropuesta(name string, partes []int64){
-	registroname=append(registroname,name)
-	registroprop=append(registroprop,partes)
-	ActualizarRegistro()
-}
+
 func TotalConectados()int{
 	activos= []int{}
 	cont:=0
@@ -366,8 +407,17 @@ func GenerarPropuestaNueva (total int, conectados int)([]int64){
 		return propuesta
 	}
 }
+func VerifProp(prop []int64)bool{
+	for _,chunk:=range prop{
+		if !datanodestatus[chunk]{
+			return false
+		}
+	}
+	return true
+}
 
-func AllAlive () (bool){
+func AllAlive (prop []int64) (bool){
+
 	for j,dire :=range datanode{
 		conn, err := grpc.Dial(dire, grpc.WithInsecure())
 		if err != nil {
@@ -392,37 +442,24 @@ func AllAlive () (bool){
 		datanodestatus[j]=true
 		fmt.Println(resp.GetMsg())
 	}
-	
-	if reflect.DeepEqual(datanodestatus,[]bool{true,true,true}){
-		fmt.Println("Todos los datanodes estan vivos")
+	if reflect.DeepEqual(prop, []int64{}){
 		return true
-	}else{
+	}
+	if !VerifProp(prop){
 		return false
 	}
+	return true
 }
-
-
 
 func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2.PropuestaResponse, error) {
-	
-	/* RECEPCION DE PROPUESTA DE DATANODE */
-
-	fmt.Println("Recibida propuesta!")
-	fmt.Println(msg.GetProp())
-
-	/* VERIFICAR QUE LOS NODOS DE LA PROPUESTA ESTEN ALIVE*/
-	//allalive := AllAlive()
-	//fmt.Println(allalive)
-	if AllAlive() {
-		GuardarPropuesta(msg.GetName(),msg.GetProp())
+	if AllAlive(msg.GetProp()) {
 		return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
-	} else {
-		nuevaprop:=GenerarPropuestaNueva(len(msg.GetProp()),TotalConectados())
-		GuardarPropuesta(msg.GetName(),nuevaprop)
-		return &pb2.PropuestaResponse{Msg : false, Prop : nuevaprop}, nil
+	} else {		
+		return &pb2.PropuestaResponse{Msg : false, Prop : []int64{}}, nil
 	}
-		
 }
+
+
 
 func (s *server) Distribucion(ctx context.Context, msg *pb2.DistribucionRequest) (*pb2.DistribucionResponse, error) {
 	
@@ -453,6 +490,15 @@ func (s *server) TypeDis(ctx context.Context, msg *pb.TypeRequest) (*pb.TypeResp
 		fmt.Println("Tipo distribucion: ", tipo_distribucion)
 	}
 	return &pb.TypeResponse{Resp: "ok" }, nil
+}
+
+func (s *server) RicandAgra(ctx context.Context, msg *pb2.RicandAgraRequest) (*pb2.RicandAgraResponse, error) {
+	if ocupado == false {
+		return &pb2.RicandAgraResponse{Resp: "mensaje" , Id: int64(id_node)}, nil
+	} else {
+		return &pb2.RicandAgraResponse{Resp: "ocupado" , Id: int64(id_node)}, nil
+	}
+	
 }
 
 func main() {

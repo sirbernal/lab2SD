@@ -37,9 +37,21 @@ message DistribucionResponse {
 
 }
 
+message RicandAgraRequest {
+    int64 id = 1;
+
+}
+
+message RicandAgraResponse {
+    string resp = 1;
+    int64 id = 2;
+
+}
+
 
 service NodeService {
     rpc Alive (AliveRequest) returns (AliveResponse) {}
     rpc Propuesta (PropuestaRequest) returns (PropuestaResponse){}
     rpc Distribucion (DistribucionRequest) returns (DistribucionResponse) {}
+    rpc RicandAgra (RicandAgraRequest) returns (RicandAgraResponse) {}
 }

@@ -241,18 +241,22 @@ func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2
 	fmt.Println("Recibida propuesta!")
 	fmt.Println(msg.GetProp())
 
-	/* VERIFICAR QUE LOS NODOS DE LA PROPUESTA ESTEN ALIVE*/
-	//allalive := AllAlive()
-	//fmt.Println(allalive)
-	if AllAlive() {
+	if tipo_distribucion == "centralizado" {
+		/* VERIFICAR QUE LOS NODOS DE LA PROPUESTA ESTEN ALIVE*/
+		if AllAlive() {
+			GuardarPropuesta(msg.GetName(),msg.GetProp())
+			return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
+		} else {
+			nuevaprop:=GenerarPropuestaNueva(len(msg.GetProp()),TotalConectados())
+			GuardarPropuesta(msg.GetName(),nuevaprop)
+			return &pb2.PropuestaResponse{Msg : false, Prop : nuevaprop}, nil
+		}
+	} else if tipo_distribucion == "distribuido"{
 		GuardarPropuesta(msg.GetName(),msg.GetProp())
 		return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
-	} else {
-		nuevaprop:=GenerarPropuestaNueva(len(msg.GetProp()),TotalConectados())
-		GuardarPropuesta(msg.GetName(),nuevaprop)
-		return &pb2.PropuestaResponse{Msg : false, Prop : nuevaprop}, nil
 	}
-		
+	
+	return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
 }
 
 func (s *server) DownloadNames(ctx context.Context, msg *pb.DownloadNamesRequest) (*pb.DownloadNamesResponse, error) {
@@ -282,6 +286,10 @@ func (s *server) TypeDis(ctx context.Context, msg *pb.TypeRequest) (*pb.TypeResp
 		fmt.Println("Tipo distribucion: ", tipo_distribucion)
 	}
 	return &pb.TypeResponse{Resp: "ok" }, nil
+}
+func (s *server) RicandAgra(ctx context.Context, msg *pb2.RicandAgraRequest) (*pb2.RicandAgraResponse, error) {
+
+	return &pb2.RicandAgraResponse{Resp: "mensaje" , Id: int64(1)}, nil
 }
 
 
