@@ -12,14 +12,13 @@ import (
 	"strconv"
 
 
-
 	pb "github.com/sirbernal/lab2SD/proto/client_service"
 	"google.golang.org/grpc"
 )
 var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}
 var directions = []string{"localhost:50055", "localhost:50052","localhost:50053","localhost:50054"}
-var nodemode = []string{"","","",""}
-var datanodestatus = []bool{false,false,false}
+var nodemode = []string{"","","",""} //tipo de distribucion de los nodos
+var nodestatus = []bool{false,false,false,false} //estado de los nodos
 
 var chunks [][]byte //donde guardo los chunks para subir
 var rechunks [][]byte //donde guardo los chunks para bajar
@@ -86,7 +85,7 @@ func Unchunker(name string){
 }
 
 func SolicitarLibros()[]string{
-	conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
+	conn, err := grpc.Dial(directions[0], grpc.WithInsecure())
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -106,7 +105,7 @@ func SolicitarLibros()[]string{
 	return resp.GetNames()
 }
 func SolicitarUbicacion(libro string)([]int64){
-	conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
+	conn, err := grpc.Dial(directions[0], grpc.WithInsecure())
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -118,7 +117,6 @@ func SolicitarUbicacion(libro string)([]int64){
 	defer cancel()
 	msg:= &pb.LoCRequest{Req: libro,}
 	resp, err := client.LocationsofChunks(ctx, msg)
-	
 	return resp.GetLocation()
 		
 }
@@ -185,11 +183,38 @@ func SubirArchivo(node int, archivo string)(){
 		}	
 	}
 }
-func menu_centralizado(){
+func VerifNodos(){
+	for i, dire := range directions{
+		conn, err := grpc.Dial(dire, grpc.WithInsecure())
+		if err != nil {
+			//fmt.Println("No esta el nodo")
+			continue
+		}
+		defer conn.Close()
+
+		client := pb.NewClientServiceClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		msg:= &pb.TypeRequest{Type: "status" }
+
+		resp, err := client.TypeDis(ctx, msg)
+		if err != nil {
+			//fmt.Println("No esta el nodo")
+			continue
+			}
+		if resp.GetResp()=="online"{
+			nodestatus[i]=true
+		}	
+	}
+}
+
+func menu2(tipo string){
 	var menu2 string
 	Menu2:
 		for {
-			fmt.Print("\n\n---Menu Algoritmo de Exclusión Mutua Centralizada--- \nIngrese opción\n1.-Subir Archivo\n2.-Ver archivos en sistema\n3.-Cerrar Sistema\nIngrese opción:")
+			fmt.Print("\n\n---Menu Algoritmo de Exclusión Mutua "+tipo+"--- \nIngrese opción\n1.-Subir Archivo\n2.-Ver archivos en sistema\n3.-Cerrar Sistema\nIngrese opción:")
+			VerifNodos()
 			_,err:=fmt.Scanln(&menu2)
 				if err!=nil{
 					fmt.Print("\nFormato de ingreso no válido, pruebe nuevamente...")
@@ -197,35 +222,64 @@ func menu_centralizado(){
 				}
 			switch menu2{
 			case "1": 
-				var datasubida string
-				var dataint int
-				fmt.Println("--Lista de Datanodes--")
-				for i,j:= range datanode{
-					fmt.Println(strconv.Itoa(i+1)+".- Datanode "+strconv.Itoa(i+1)+" Ip:"+j)
-				}
-				for {
-					fmt.Print("Seleccione un datanode:")
-					_,err:=fmt.Scanln(&datasubida)
-					if err!=nil{
-						fmt.Println("Formato no válido, pruebe nuevamente...")
-						continue
+				Menusubida:
+					for{
+						VerifNodos()
+						if !nodestatus[0]{
+							fmt.Println("Namenode apagado, por favor inicializar... regresando al menu principal")
+							continue Menu2
+							
+						}
+						var datasubida string
+						var dataint int
+						fmt.Println("--Lista de Datanodes--")
+						for i,j:= range datanode{
+							var k string
+							if nodestatus[i+1]{
+								k="  online"
+							}else{
+								k="  offline"
+							}
+							fmt.Println(strconv.Itoa(i+1)+".- Datanode "+strconv.Itoa(i+1)+" Ip:"+j+k)
+						}
+						for {
+							fmt.Print("n.- Volver\nSeleccione un datanode:")
+							_,err:=fmt.Scanln(&datasubida)
+							if err!=nil{
+								fmt.Println("Formato no válido, pruebe nuevamente...")
+								continue
+							}
+							if datasubida=="n"{
+								continue Menu2
+							}
+							dataint,err=strconv.Atoi(datasubida)
+							if err!=nil{
+								fmt.Println("Formato no válido, pruebe nuevamente...")
+								continue
+							}
+							if !nodestatus[dataint]{
+								fmt.Println("Nodo fuera de linea, actualizando información de nodos...")
+								continue Menusubida
+							}
+							if dataint>0 && dataint<len(datanode)+1{
+								break
+							}else{
+								fmt.Println("Opción no válida, pruebe nuevamente...")
+							}
 					}
-					dataint,err=strconv.Atoi(datasubida)
-					if err!=nil{
-						fmt.Println("Formato no válido, pruebe nuevamente...")
-						continue
-					}
-					if dataint>0 && dataint<len(datanode)+1{
-						break
-					}else{
-						fmt.Println("Opción no válida, pruebe nuevamente...")
-					}
-				}
-				var archivo string
-				fmt.Print("Ingrese nombre de archivo con su extension(ejemplo: archivo.pdf):")
-				fmt.Scanln(&archivo)
-				SubirArchivo(dataint-1,archivo)
+					var archivo string
+					fmt.Print("Ingrese nombre de archivo con su extension(ejemplo: archivo.pdf):")
+					fmt.Scanln(&archivo)
+					SubirArchivo(dataint-1,archivo)
+					continue Menu2
+					} 
 			case "2":
+				VerifNodos()
+				if !nodestatus[0]{
+					fmt.Println("Namenode apagado, por favor inicializar... regresando al menu principal")
+					continue Menu2
+					
+				}
 				libros:=SolicitarLibros()
 				if len(libros)==0{
 					fmt.Println("\n\nSistema sin archivos disponibles")
@@ -256,6 +310,10 @@ func menu_centralizado(){
 				}
 				fmt.Print("Descargando archivo: "+libros[optint-1])
 				ubicacion := SolicitarUbicacion(libros[optint-1])
+				if len(ubicacion)==0{
+					fmt.Println("\n\nArchivo no recuperable\nMotivo: nodos que contenían parte de este estan fuera de línea\nRedireccionando a Menú Principal...\n")
+					continue Menu2
+				}
 				DescargarChunks(libros[optint-1], ubicacion)
 			case "3":
 				fmt.Println("Terminando ejecución cliente...")
@@ -265,10 +323,6 @@ func menu_centralizado(){
 				continue Menu2
 			}
 		}
-}
-func menu_distribuido(){
-	fmt.Println("Aqui deberia aplicarle el ricky wala")
-	menu_centralizado()
 }
 func DistribStatus()int{ //0 estan sin modo, 1 esta centralizado, 2 esta distribuido, 3 fallo todo
 	cent:=0
@@ -353,7 +407,7 @@ func menu(){
 						continue
 						}
 				}
-				menu_centralizado()
+				menu2("Centralizada")
 				break
 			}else if menu1=="2"{
 				tipo_distribucion = "distribuido"
@@ -378,7 +432,7 @@ func menu(){
 						continue
 						}
 				}
-				menu_distribuido()
+				menu2("Distribuida")
 				break
 			}else{
 				fmt.Println("\nFormato u opción no válida, pruebe nuevamente:\n\n")
@@ -387,10 +441,10 @@ func menu(){
 		}
 	case 1:
 		fmt.Println("Algoritmo de Exclusión Mutua Centralizada Detectado\nRedireccionando a Menu del algoritmo...")
-		menu_centralizado()
+		menu2("Centralizada")
 	case 2:
 		fmt.Println("Algoritmo de Exclusión Mutua Distribuida Detectado\nRedireccionando a Menu del algoritmo...")
-		menu_distribuido()
+		menu2("Distribuida")
 	case 3:
 		fmt.Println("Algoritmo corrompido detectado! (Presencia de distintos algoritmos en distintos nodos)\nPor favor, reiniciar el sistema completo\n\n---Cerrando Sistema--")
 		return

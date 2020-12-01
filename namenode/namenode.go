@@ -265,13 +265,29 @@ func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2
 func (s *server) DownloadNames(ctx context.Context, msg *pb.DownloadNamesRequest) (*pb.DownloadNamesResponse, error) {
 	return &pb.DownloadNamesResponse{Names : registroname }, nil
 }
-func BuscarChunks(name string)([]int64){
-	for i,reg :=range registroname{
-		if reg==name{
-			return registroprop[i]
+func VerifProp(prop []int64)bool{
+	AllAlive()
+	for _,chunk:=range prop{
+		if !datanodestatus[chunk]{
+			return false
 		}
 	}
-	return []int64{}
+	return true
+}
+func BuscarChunks(name string)([]int64){
+	var propreq= []int64{}
+	for i,reg :=range registroname{
+		if reg==name{
+			propreq=registroprop[i]
+		}
+	}
+	if reflect.DeepEqual(propreq,[]int64{}){
+		return []int64{}
+	}
+	if !VerifProp(propreq){
+		return []int64{}
+	}
+	return propreq
 }
 func (s *server) DownloadChunks(ctx context.Context, msg *pb.DownloadChunksRequest) (*pb.DownloadChunksResponse, error) {
 
@@ -284,12 +300,15 @@ func (s *server) LocationsofChunks(ctx context.Context, msg *pb.LoCRequest) (*pb
 func (s *server) TypeDis(ctx context.Context, msg *pb.TypeRequest) (*pb.TypeResponse, error) {
 	if msg.GetType()=="inicio"{
 		return &pb.TypeResponse{Resp: tipo_distribucion}, nil
+	}else if msg.GetType()=="status"{
+		return &pb.TypeResponse{Resp: "online"}, nil
 	}else{
 		tipo_distribucion = msg.GetType()
 		fmt.Println("Tipo distribucion: ", tipo_distribucion)
 	}
 	return &pb.TypeResponse{Resp: "ok" }, nil
 }
+
 func (s *server) RicandAgra(ctx context.Context, msg *pb2.RicandAgraRequest) (*pb2.RicandAgraResponse, error) {
 
 	return &pb2.RicandAgraResponse{Resp: "mensaje" , Id: int64(1)}, nil

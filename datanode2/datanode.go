@@ -517,12 +517,15 @@ func (s *server) LocationsofChunks(ctx context.Context, msg *pb.LoCRequest) (*pb
 func (s *server) TypeDis(ctx context.Context, msg *pb.TypeRequest) (*pb.TypeResponse, error) {
 	if msg.GetType()=="inicio"{
 		return &pb.TypeResponse{Resp: tipo_distribucion}, nil
+	}else if msg.GetType()=="status"{
+		return &pb.TypeResponse{Resp: "online"}, nil
 	}else{
 		tipo_distribucion = msg.GetType()
 		fmt.Println("Tipo distribucion: ", tipo_distribucion)
 	}
 	return &pb.TypeResponse{Resp: "ok" }, nil
 }
+
 
 func (s *server) RicandAgra(ctx context.Context, msg *pb2.RicandAgraRequest) (*pb2.RicandAgraResponse, error) {
 	if ocupado == false {
