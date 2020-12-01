@@ -48,7 +48,6 @@ message RicandAgraResponse {
 
 }
 
-
 service NodeService {
     rpc Alive (AliveRequest) returns (AliveResponse) {}
     rpc Propuesta (PropuestaRequest) returns (PropuestaResponse){}

@@ -236,11 +236,14 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 			for{
 				fmt.Println(propuesta)
 				AllAlive([]int64{})
-				for _,dire:= range datanode{
+				for i,dire:= range datanode{
 					/* GENERAR PROPUESTA*/
 					/* Primero, generamos la conexion con cada datanode*/
 					if this_datanode == dire{ // No enviaremos a este mismo nodo la propuesta a generar
 						contador++
+						continue
+					}
+					if !datanodestatus[i]{
 						continue
 					}
 					conn, err := grpc.Dial(dire, grpc.WithInsecure()) // enviamos propuesta a un nodo especifico
@@ -267,7 +270,6 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 					}else{
 						contador++
 					}
-					
 				}
 				fmt.Println(contador,TotalConectados())
 				if int(contador)==TotalConectados(){
