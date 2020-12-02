@@ -33,6 +33,7 @@ var tipo_distribucion string //se guarda el tipo de distribucion del datanode
 var this_datanode = datanode[0] //direccion de datanode
 var activos []int //guarda cuales son los nodos activos
 var datanodestatus = []bool{false,false,false} //guarda el estado de los datanodes en orden
+var c_mensajes = 0 // contador de mensajes usado para pruebas que se haran en el informe
 
 func SaveChunk (chunk []byte, name string){ //transforma el chunk en un archivo para guardar en almacenamiento acorde al nombre entregado
 	fileName := name //sacado del tutorial del enunciado
@@ -87,6 +88,7 @@ func GenerarPropuesta (total int)([]int64){ //funcion que genera la propuesta in
 func (s *server) Upload(ctx context.Context, msg *pb.UploadRequest) (*pb.UploadResponse, error) {//funcion que recibe el nombre y cantidad de chunks que tiene el archivo del cliente
 	nombrearchivo=msg.GetNombre() //guarda el nombre
 	total=msg.GetTotalchunks() //guarda el total de chunks
+	c_mensajes = c_mensajes + 2
 	return &pb.UploadResponse{Resp : int64(0), }, nil
 }
 
@@ -110,7 +112,7 @@ func RicartyAgrawala()bool{
 		msg:= &pb2.RicandAgraRequest{Id: int64(id_node)} // generamos el mensaje con la propuesta
 
 		resp, err := client.RicandAgra(ctx, msg) // enviamos la propuesta y recibimos la respuesta
-
+		c_mensajes = c_mensajes + 2
 		if resp.GetResp() != "mensaje"{
 			if resp.GetId() > int64(id_node){
 				return false
@@ -144,6 +146,7 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 				defer cancel() // Con esta funcion generaremos la propuesta
 				msg:= &pb2.StatusRequest{Id: 1} // generamos el mensaje con la consulta de estado al namenode
 				resp, err := client.Status(ctx, msg)
+				c_mensajes = c_mensajes + 2
 				if resp.GetResp()==1{ //si esta libre, procedemos a seguir el algoritmo
 					break
 				}//si no, volvemos a consultar si se encuentra disponible el namenode
@@ -161,12 +164,14 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 			propuesta := GenerarPropuesta(int(total)) // Con esta funcion generaremos la propuesta
 			msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo} // generamos el mensaje con la propuesta
 			resp, err := client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
+			c_mensajes = c_mensajes + 2
 			fmt.Println(resp.GetProp())
 			if resp.GetMsg() == false{  // cuando se rechaza la propuesta, la actualizamos con la propuesta recibida x namenode
 				propuesta = resp.GetProp()
 			}
 			msg2:= &pb2.StatusRequest{Id: 2} // liberamos al datanode, ya que se reviso la propuesta y se procedera a distriburi
 			_, err=client.Status(ctx, msg2)
+			c_mensajes = c_mensajes + 2
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -189,13 +194,18 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 			defer cancel()
 			msg:= &pb2.DistribucionRequest{Chunk: chunks[i], Name: nombrearchivo+"_"+strconv.Itoa(i)}// Creamos el mensaje con el chunk correspondiente + el nombre del chunk 
 			_, err = client.Distribucion(ctx, msg)// Enviamos el chunk
+			c_mensajes = c_mensajes + 2
 			if err != nil {
 				continue
 			}
 		}
 		chunks = [][]byte{}// Una vez realizada la distribucion, reiniciamos el arreglo donde guardamos los chunks
-		return &pb.UploadChunksResponse{Resp : "El servidor guardo el archivo", }, nil //Avisamos al cliente de que esta completa la subida y distribucion del archivo
+		c_mensajes = c_mensajes + 2
+		mensaj := "El servidor guardo el archivo, num. de mensajes totales: " + strconv.Itoa(c_mensajes)
+		c_mensajes = 0
+		return &pb.UploadChunksResponse{Resp : mensaj }, nil //Avisamos al cliente de que esta completa la subida y distribucion del archivo
 		}
+		c_mensajes = c_mensajes + 2
 		return &pb.UploadChunksResponse{Resp : "chunk recibido en el server", }, nil// Esto se envia cuando no se tienen todos los chunks del archivo
 
 		
@@ -248,6 +258,7 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 					msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo} // generamos el mensaje con la propuesta 
 
 					resp, err := client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
+					c_mensajes = c_mensajes + 2
 					//estado := resp.GetMsg()
 					fmt.Println(resp.GetProp(),resp.GetMsg(),contador,dire)
 					if resp.GetMsg() == false{  // cuando se rechaza la propuesta, la actualizamos con la propuesta recibida x namenode	
@@ -266,7 +277,7 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 				}
 				contador=0
 			}
-			fmt.Println(propuesta,"salí watcho")
+			//fmt.Println(propuesta,"salí watcho")
 			//Enviar mensaje a namenode con la propuesta aceptada por nodos 
 
 		
@@ -295,7 +306,7 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 			msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo} // enviamos propuesta a namenode para que la escriba
 
 			_, err = client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
-
+			c_mensajes = c_mensajes + 2
 			ocupado = false // como ya terminamos de contactarnos con namenode, desactivamos esta variable
 
 
@@ -324,25 +335,35 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 				
 				// Enviamos el chunk
 				_, err = client.Distribucion(ctx, msg)
+				c_mensajes = c_mensajes + 2
 				if err != nil {
 					continue
 				}
 			}
 
 			chunks = [][]byte{}
-			return &pb.UploadChunksResponse{Resp : "El servidor guardo el archivo", }, nil //Avisamos de que estamos ok con la subida
+
+			c_mensajes = c_mensajes + 2
+			mensaj := "El servidor guardo el archivo, num. de mensajes totales: " + strconv.Itoa(c_mensajes)
+			c_mensajes = 0
+			return &pb.UploadChunksResponse{Resp : mensaj, }, nil //Avisamos de que estamos ok con la subida
 		}
 		// Este mensaje se envia cuando no hemos recibido todos los chunks de cliente
+		c_mensajes = c_mensajes + 2
 		return &pb.UploadChunksResponse{Resp : "chunk recibido en el server", }, nil 
 
 
 	} 
 	// En el caso de que el sistema no tenga claro el tipo de distribucion (la variable tipo_distribucion no tiene valor)
 	// entonces significa que algo esta fallando, avisamos de eso al cliente
+	c_mensajes = c_mensajes + 2
 	return &pb.UploadChunksResponse{Resp : "Fallo algo", }, nil
 }
 
 func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {//responde que se encuentra en linea si le es solicitado
+	c_mensajes = c_mensajes + 2
+	fmt.Println("Cant. mensajes realizados aca: ",  c_mensajes)
+	c_mensajes = 0
 	return &pb2.AliveResponse{Msg : "Im Alive, datanode", }, nil
 }
 
@@ -431,6 +452,7 @@ func AllAlive (prop []int64) (bool){//funcion que verifica los datanodes conecta
 		defer cancel()
 		msg:= &pb2.AliveRequest{Msg: "Are u alive?"} //realiza la consulta al datanode
 		_, err = client.Alive(ctx, msg)
+		c_mensajes = c_mensajes + 2
 		if err != nil {
 			datanodestatus[j]=false
 			continue

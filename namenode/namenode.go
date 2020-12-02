@@ -28,6 +28,7 @@ var tipo_distribucion string //se guarda el tipo de distribucion del namenode
 var estado =true // true: libre , false: ocupado
 var registroname []string //registro en memoria que guarda los nombres de los archivos
 var registroprop [][]int64 //registro en memoria que guarda la distribucion de chunks de archivos
+var c_mensajes = 0 // contador de mensajes usado para pruebas que se haran en el informe
 func GuardarPropuesta(name string, partes []int64){ //guarda la propuesta en memoria
 	registroname=append(registroname,name) //guarda el nombre de la propuesta
 	registroprop=append(registroprop,partes) //guarda la distribucion de chunks de la propuesta
@@ -147,6 +148,7 @@ func AllAlive () (bool){ //funcion que verifica si estan todos los datanodes con
 		defer cancel()
 		msg:= &pb2.AliveRequest{Msg: "Are u alive?"} //realiza la consulta al datanode
 		_ , err = client.Alive(ctx, msg)
+		c_mensajes = c_mensajes + 2
 		if err != nil {
 			datanodestatus[j]=false
 			continue
@@ -170,14 +172,20 @@ func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2
 		estado=false //se pone en estado ocupado
 		if AllAlive() { //verifica que los datanodes este en linea
 			GuardarPropuesta(msg.GetName(),msg.GetProp()) //si es asi acepta y guarda la propuesta
+			fmt.Println("Cant. mensajes realizados aca: ",  c_mensajes)
+			c_mensajes = 0
 			return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
 		} else {// si hay al menos un datanode offline
 			nuevaprop:=GenerarPropuestaNueva(len(msg.GetProp()),TotalConectados()) //genera una nueva propuesta en base a los datanodes conectados
 			GuardarPropuesta(msg.GetName(),nuevaprop) //guarda la nueva propuesta 
+			fmt.Println("Cant. mensajes realizados aca: ",  c_mensajes)
+			c_mensajes = 0
 			return &pb2.PropuestaResponse{Msg : false, Prop : nuevaprop}, nil //niega la propuesta inicial y envia la nueva
 		}
 	} else if tipo_distribucion == "distribuido"{//si esta en modo distribuido
 		GuardarPropuesta(msg.GetName(),msg.GetProp()) //guarda la propuesta recibida
+		fmt.Println("Cant. mensajes realizados aca: ",  c_mensajes)
+		c_mensajes = 0
 		return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
 	}	
 	return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil //return solicitado por golang

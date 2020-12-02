@@ -138,10 +138,11 @@ func SubirArchivo(node int, archivo string)(){ //funcion que envia el archivo al
 	chunks := Chunker("./"+archivo) //divide en chunks el archivo seleccionado
 	msg:= &pb.UploadRequest{Tipo: 0, Nombre: archivo, Totalchunks: int64(len(chunks))} //envia el nombre del archivo con el total de chunks para generar la prop en datanode
 	resp, err := client.Upload(ctx, msg)
-	if resp.GetResp()==int64(0){//si la propuesta es aceptada, manda los chunks al datanode para su distribución
+	if resp.GetResp()==int64(0){//Al recibir respuesta del datanode, se envian los chunks
 		for _,chunk :=range chunks{
 			msg:= &pb.UploadChunksRequest{Chunk: chunk.Chunk[:chunk.N]}
-			_, err := client.UploadChunks(ctx, msg)
+			mensaje, err := client.UploadChunks(ctx, msg)
+			fmt.Println(mensaje.GetResp())
 			if err != nil {
 				log.Fatalf("can not receive %v", err)
 			}
