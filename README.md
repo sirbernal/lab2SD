@@ -11,12 +11,13 @@
 #### Como correr el código en cada maquina
 Dependiendo de la máquina, se deberá ejecutar el comando make correspondiente:
 
-|  Comando make | Máquina   |
-| ------------ | ------------ |
-|   | 10.10.28.81 |
-|    | 10.10.28.82  |
-|  |   10.10.28.83 |
-|   | 10.10.28.84  |
+| Comando make | Máquina     | Funcionalidad |
+|--------------|-------------|---------------|
+| runn         | 10.10.28.81 | Namenode      |
+| rund1        | 10.10.28.82 | Datanode1     |
+| rund2        | 10.10.28.83 | Datanode2     |
+| rund3        | 10.10.28.84 | Datanode3     |
+| runc         | cualquiera  | Cliente       |
 
 
 #### Funcionamiento del Código
