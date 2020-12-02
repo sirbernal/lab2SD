@@ -23,8 +23,8 @@ type server struct {
 //namenode := "10.10.28.81:50051"
 var ocupado = false //estado para distribuido
 var id_node = 3 //id para distribuido 
-var datanode = []string{"localhost:50052","localhost:50053","localhost:50054"}  //arreglo que contiene las direcciones de los datanodes
-var directions = []string{"localhost:50055", "localhost:50052","localhost:50053","localhost:50054"} //arreglo que incluye al namenode (se agrego despues de muchas funciones ya hechas)
+var datanode = []string{"10.10.28.82:50052","10.10.28.83:50053","10.10.28.84:50054"} //arreglo que contiene las direcciones de los datanodes
+var directions = []string{"10.10.28.81:50055", "10.10.28.82:50052","10.10.28.83:50053","10.10.28.84:50054"}//arreglo que incluye al namenode (se agrego despues de muchas funciones ya hechas)
 var total int64 //guarda el numero total de chunks de una propuesta
 var nombrearchivo string //guarda el nombre del archivo a subir
 var cont int //indica el total de conectados
