@@ -28,13 +28,17 @@ var tipo_distribucion string //se guarda el tipo de distribucion del namenode
 var estado =true // true: libre , false: ocupado
 var registroname []string //registro en memoria que guarda los nombres de los archivos
 var registroprop [][]int64 //registro en memoria que guarda la distribucion de chunks de archivos
-var c_mensajes = 0 // contador de mensajes usado para pruebas que se haran en el informe
+//var c_mensajes = 0 // contador de mensajes usado para pruebas que se haran en el informeç
+var timeout = time.Duration(1)*time.Second //timeout para conexiones
+
 func GuardarPropuesta(name string, partes []int64){ //guarda la propuesta en memoria
+	fmt.Println("Guardando Propuesta\nNombre del archivo: "+name+" Cantidad de Partes:"+strconv.Itoa(len(partes)))
 	registroname=append(registroname,name) //guarda el nombre de la propuesta
 	registroprop=append(registroprop,partes) //guarda la distribucion de chunks de la propuesta
 	ActualizarRegistro() //actualiza el registro agregando el ultimo archivo
 }
 func ActualizarRegistro(){//actualiza el registro en base a lo que tiene en memoria
+	fmt.Println("Actualizando Registro")
 	file,err:= os.OpenFile("registro.txt",os.O_CREATE|os.O_WRONLY,0777) //abre o genera el archivo de registro
 	defer file.Close()
 	if err !=nil{
@@ -84,6 +88,7 @@ func TotalConectados()int{//funcion que calcula el numero total de conectados y 
 	return cont//retorna la cantidad
 }
 func GenerarPropuestaNueva (total int, conectados int)([]int64){//en modo centralizado genera una nueva propuesta basada en los conectados actualmente (si hay menos de 3)
+	fmt.Println("Generando nueva propuesta en base a los datanodes conectados...")
 	var propuesta []int64 //nueva propuesta
 	for i:=0;i<=total/conectados;i++{ //genera la propuesta para cada chunk en base al total/total de conectados, es decir si hay dos conectados, lo hara por cada dos chunks
 		rand.Seed(time.Now().UnixNano())//genera una semilla random basada en el time de la maquina
@@ -144,11 +149,11 @@ func AllAlive () (bool){ //funcion que verifica si estan todos los datanodes con
 		}
 		defer conn.Close()
 		client := pb2.NewNodeServiceClient(conn)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		msg:= &pb2.AliveRequest{Msg: "Are u alive?"} //realiza la consulta al datanode
 		_ , err = client.Alive(ctx, msg)
-		c_mensajes = c_mensajes + 2
+		//c_mensajes = c_mensajes + 2
 		if err != nil {
 			datanodestatus[j]=false
 			continue
@@ -156,42 +161,48 @@ func AllAlive () (bool){ //funcion que verifica si estan todos los datanodes con
 		datanodestatus[j]=true //actualiza la lista de estados
 	}
 	if reflect.DeepEqual(datanodestatus,[]bool{true,true,true}){//si estan todos conectados retorna true
-		fmt.Println(datanodestatus)
+		//fmt.Println(datanodestatus)
 		return true
 	}else{
-		fmt.Println(datanodestatus)
+		//fmt.Println(datanodestatus)
 		return false
 	}
 }
 
 
 func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2.PropuestaResponse, error) {//funcion que recibe la propuesta del datanode
-	
+	fmt.Println("Propuesta Recibida!")
 	/* RECEPCION DE PROPUESTA DE DATANODE */
 	if tipo_distribucion == "centralizado" { //si esta en modo centralizado
+		fmt.Println("Actualizando Estado: OCUPADO")
 		estado=false //se pone en estado ocupado
+		fmt.Println("Verificando Propuesta...")
 		if AllAlive() { //verifica que los datanodes este en linea
+			fmt.Println("Propuesta Valida")
 			GuardarPropuesta(msg.GetName(),msg.GetProp()) //si es asi acepta y guarda la propuesta
-			fmt.Println("Cant. mensajes realizados aca: ",  c_mensajes)
-			c_mensajes = 0
+			//fmt.Println("Cant. mensajes realizados aca: ",  c_mensajes)
+			//c_mensajes = 0
+			
 			return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
 		} else {// si hay al menos un datanode offline
+			fmt.Println("Propuesta Rechazada... Detectado Nodo Offline dentro de propuesta...")
 			nuevaprop:=GenerarPropuestaNueva(len(msg.GetProp()),TotalConectados()) //genera una nueva propuesta en base a los datanodes conectados
 			GuardarPropuesta(msg.GetName(),nuevaprop) //guarda la nueva propuesta 
-			fmt.Println("Cant. mensajes realizados aca: ",  c_mensajes)
-			c_mensajes = 0
+			//fmt.Println("Cant. mensajes realizados aca: ",  c_mensajes)
+			//c_mensajes = 0
 			return &pb2.PropuestaResponse{Msg : false, Prop : nuevaprop}, nil //niega la propuesta inicial y envia la nueva
 		}
 	} else if tipo_distribucion == "distribuido"{//si esta en modo distribuido
 		GuardarPropuesta(msg.GetName(),msg.GetProp()) //guarda la propuesta recibida
-		fmt.Println("Cant. mensajes realizados aca: ",  c_mensajes)
-		c_mensajes = 0
+		//fmt.Println("Cant. mensajes realizados aca: ",  c_mensajes)
+		//c_mensajes = 0
 		return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil
 	}	
 	return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil //return solicitado por golang
 }
 
 func (s *server) DownloadNames(ctx context.Context, msg *pb.DownloadNamesRequest) (*pb.DownloadNamesResponse, error) {//funcion que retorna al cliente los nombres de archivos disponibles
+	fmt.Println("Solicitud de nombres recibida!\nEnviando nombres de archivos disponibles\nCantidad: "+strconv.Itoa(len(registroname))+"\n")
 	return &pb.DownloadNamesResponse{Names : registroname }, nil
 }
 func VerifProp(prop []int64)bool{ //funcion que verifica que en la propuesta generada esten todos los nodos activos
@@ -211,17 +222,21 @@ func BuscarChunks(name string)([]int64){ //funcion que busca la distribucion de 
 		}
 	}
 	if reflect.DeepEqual(propreq,[]int64{}){ //si no encuentra nada retorna vacio
+		fmt.Println("Archivo No Encontrado... notificando error\n")
 		return []int64{}
 	}
 	if !VerifProp(propreq){ //si dentro de la distribucion hay un nodo desconectado retorna una distribucion vacia para notificar que es imposible rearmar el archivo
+		fmt.Println("ERROR! Partes de archivos dentro de datanode Offline... notificando error\n")
 		return []int64{}
 	}
+	fmt.Println("Archivo disponible! Enviando distribucion\n")
 	return propreq
 }
 func (s *server) DownloadChunks(ctx context.Context, msg *pb.DownloadChunksRequest) (*pb.DownloadChunksResponse, error) {//funcion de los datanodes
 	return &pb.DownloadChunksResponse{Chunk : []byte{} }, nil
 }
 func (s *server) LocationsofChunks(ctx context.Context, msg *pb.LoCRequest) (*pb.LoCResponse, error) {//funcion que retorna la ubicacion de las partes del archivo solicitado por el cliente
+	fmt.Println("Solicitud Recibida! Retornando Ubicacion de Partes de archivo: "+msg.GetReq())
 	return &pb.LoCResponse{Location: BuscarChunks(msg.GetReq())} , nil
 }
 func (s *server) TypeDis(ctx context.Context, msg *pb.TypeRequest) (*pb.TypeResponse, error) {//funcion para multiples usos
@@ -230,6 +245,7 @@ func (s *server) TypeDis(ctx context.Context, msg *pb.TypeRequest) (*pb.TypeResp
 	}else if msg.GetType()=="status"{ //funcion que notifica que se encuentra online el nodo
 		return &pb.TypeResponse{Resp: "online"}, nil
 	}else{//solo queda la posibilidad de que reciba por parte del cliente el algoritmo con el cual funcionara la maquina
+		fmt.Println("Recepcion de algoritmo de distribucion "+msg.GetType()+"\nAplicando Configuración...\nListo\n")
 		tipo_distribucion = msg.GetType()//actualiza el tipo de distribución con la cual funcionará el node
 	}
 	return &pb.TypeResponse{Resp: "" }, nil
@@ -255,6 +271,7 @@ func (s *server) Status(ctx context.Context, msg *pb2.StatusRequest) (*pb2.Statu
 			return &pb2.StatusResponse{Resp: 0 }, nil //esta ocupado con otro datanode
 		}
 	case 2: //data node manda esto cuando termina distribucion y libera al namenode/centralizado
+		fmt.Println("Actualizando Estado: DISPONIBLE\n")
 		estado=true //actualiza el estado a libre
 		return &pb2.StatusResponse{Resp: -1 }, nil
 	default: 
@@ -264,6 +281,7 @@ func (s *server) Status(ctx context.Context, msg *pb2.StatusRequest) (*pb2.Statu
 	
 }
 func InicioTipo()bool{ //funcion de inicializacion para verificar si otras maquinas ya online poseen una distribucion implementada
+	fmt.Println("Revisando datanodes...")
 	initipo:= []bool{false,false}  // centralizado,distribuido
 	for _,dire :=range directions{ //revisa cada node
 		if dire==this_datanode{ //omite la consulta a si mismo
@@ -275,7 +293,7 @@ func InicioTipo()bool{ //funcion de inicializacion para verificar si otras maqui
 		}
 		defer conn.Close()
 		client := pb2.NewNodeServiceClient(conn)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		msg:= &pb2.StatusRequest{Id: 0} //realiza la consulta de estado
 		resp, err := client.Status(ctx, msg)
@@ -289,11 +307,14 @@ func InicioTipo()bool{ //funcion de inicializacion para verificar si otras maqui
 		}//2 no representa nada por lo que lo omite
 	}
 	if !initipo[0] && !initipo[1]{//si el arreglo queda vacio aun no hay un tipo de distribucion implementado por lo que no hace nada
+		fmt.Println("Algoritmo de Exclusión Mutua no detectado...\nEsperando configuracion de cliente...")
 		return true
 	}else if initipo[0] && !initipo[1]{//si detecta solo centralizado pone al node en modo centralizado
+		fmt.Println("Algoritmo de Exclusión Mutua Centralizada detectado...\nAplicando Configuración...\nListo\n")
 		tipo_distribucion="centralizado"
 		return true
 	}else if !initipo[0] && initipo[1]{//si detecta solo distribuido pone al node en modo centralizado
+		fmt.Println("Algoritmo de Exclusión Mutua Distribuida detectado...\nAplicando Configuración...\nListo\n")
 		tipo_distribucion="distribuido"
 		return true
 	}else{//si detecta ambas notifica el error y cierra el sistema
@@ -309,6 +330,7 @@ func main()  {
 		log.Fatal("Error conectando: %v", err)
 	}
 	s := grpc.NewServer()
+	fmt.Println("INICIALIZANDO NAMENODE...")
 	in:=InicioTipo()//verifica el estado de otras maquinas para actualizar de ser necesario el modo a centralizado o distribuido
 	if !in{//si hay un estado sin sentido cierra el sistema y notifica
 		return

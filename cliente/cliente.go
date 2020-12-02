@@ -20,6 +20,7 @@ var nodestatus = []bool{false,false,false,false} //arreglo que guarda el estado 
 var chunks [][]byte //donde se guarda los chunks para subir
 var rechunks [][]byte //donde se guarda los chunks para bajar
 var tipo_distribucion string  //se guarda el tipo de distribucion del cliente
+var timeout = time.Duration(1)*time.Second //timeout para conexiones
 type ChunkAndN struct{  //estructura usada para hacer chunks
 	Chunk []byte //chunk
 	N int //numero necesario para envio de chunks visto en este tutorial https://ops.tips/blog/sending-files-via-grpc/
@@ -84,7 +85,7 @@ func SolicitarLibros()[]string{//solicita la lista de libros al namenode
 	}
 	defer conn.Close()
 	client := pb.NewClientServiceClient(conn)    
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	msg:= &pb.DownloadNamesRequest{Req: "Libros",} //envia el request con la cadena "Libros" la cual el namenode detecta para esta petición
 	resp, err := client.DownloadNames(ctx, msg)	
@@ -101,7 +102,7 @@ func SolicitarUbicacion(libro string)([]int64){ //solicita la ubicacion de los c
 	}
 	defer conn.Close()
 	client := pb.NewClientServiceClient(conn)    
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	msg:= &pb.LoCRequest{Req: libro,}//solicita el archivo que requiere por medio de su nombre
 	resp, err := client.LocationsofChunks(ctx, msg)
@@ -118,7 +119,7 @@ func DescargarChunks(name string, prop []int64){//funcion que descarga y almacen
 		}
 		defer conn.Close()
 		client := pb.NewClientServiceClient(conn)		
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		msg:= &pb.DownloadChunksRequest{Name: chunkadescargar} //envia el nombre del chunk a descargar
 		resp, err := client.DownloadChunks(ctx, msg)
@@ -133,7 +134,7 @@ func SubirArchivo(node int, archivo string)(){ //funcion que envia el archivo al
 	}
 	defer conn.Close()
 	client := pb.NewClientServiceClient(conn)    
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	chunks := Chunker("./"+archivo) //divide en chunks el archivo seleccionado
 	msg:= &pb.UploadRequest{Tipo: 0, Nombre: archivo, Totalchunks: int64(len(chunks))} //envia el nombre del archivo con el total de chunks para generar la prop en datanode
@@ -141,8 +142,8 @@ func SubirArchivo(node int, archivo string)(){ //funcion que envia el archivo al
 	if resp.GetResp()==int64(0){//Al recibir respuesta del datanode, se envian los chunks
 		for _,chunk :=range chunks{
 			msg:= &pb.UploadChunksRequest{Chunk: chunk.Chunk[:chunk.N]}
-			mensaje, err := client.UploadChunks(ctx, msg)
-			fmt.Println(mensaje.GetResp())
+			_, err = client.UploadChunks(ctx, msg)
+			//fmt.Println(mensaje.GetResp())
 			if err != nil {
 				log.Fatalf("can not receive %v", err)
 			}
@@ -159,7 +160,7 @@ func VerifNodos(){ //funcion que revisa y actualiza el estado de los datanodes y
 
 		client := pb.NewClientServiceClient(conn)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		msg:= &pb.TypeRequest{Type: "status" } //envia la consulta por medio de la palabra "status"
 
@@ -234,11 +235,11 @@ func menu2(tipo string){//Menu que se despliega luego de seleccionar el algoritm
 					var archivo string
 					fmt.Print("Ingrese nombre de archivo con su extension(ejemplo: archivo.pdf):") 
 					fmt.Scanln(&archivo) //guarda el nombre de su archivo incluida la extension
-					t := time.Now() // Se usara para medir el tiempo de ejecucion (inicial)
+					//t := time.Now() // Se usara para medir el tiempo de ejecucion (inicial)
 					SubirArchivo(dataint-1,archivo) //llama a la funcion de subir archivo con el nodo seleccionado
-					t2 := time.Now() // Se usara para medir el tiempo de ejecucion (final)
-					def := t2.Sub(t) // obtenemos la resta de los tiempos de ejecucion
-					fmt.Println("tiempo de demora: ", def) // obtenemos el tiempo de ejecucion
+					//t2 := time.Now() // Se usara para medir el tiempo de ejecucion (final)
+					//def := t2.Sub(t) // obtenemos la resta de los tiempos de ejecucion
+					//fmt.Println("tiempo de demora: ", def) // obtenemos el tiempo de ejecucion
 					continue Menu2 //vuelve al menu principal
 
 					} 
@@ -326,7 +327,7 @@ func VerifInicial()int{ //funcion que verifica inicialmente que algortmo esta co
 		}
 		defer conn.Close()
 		client := pb.NewClientServiceClient(conn)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		msg:= &pb.TypeRequest{Type: "inicio" } //envia la palabra "inicio" al nodo
 		resp, err := client.TypeDis(ctx, msg)
@@ -359,7 +360,7 @@ func menu(){//menu de inicializacion del cliente
 					}
 					defer conn.Close()
 					client := pb.NewClientServiceClient(conn)
-					ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), timeout)
 					defer cancel()
 					msg:= &pb.TypeRequest{Type: tipo_distribucion } //envia "centralizado" a cada nodo para actualizar su modo
 					_, err = client.TypeDis(ctx, msg)
@@ -378,7 +379,7 @@ func menu(){//menu de inicializacion del cliente
 					}
 					defer conn.Close()
 					client := pb.NewClientServiceClient(conn)
-					ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), timeout)
 					defer cancel()
 					msg:= &pb.TypeRequest{Type: tipo_distribucion } //envia "distribuido" a cada nodo para actualizar su modo
 					_, err = client.TypeDis(ctx, msg)

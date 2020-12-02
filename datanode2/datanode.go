@@ -34,8 +34,10 @@ var this_datanode = datanode[1] //direccion de datanode
 var activos []int //guarda cuales son los nodos activos
 var datanodestatus = []bool{false,false,false} //guarda el estado de los datanodes en orden
 var c_mensajes = 0 // contador de mensajes usado para pruebas que se haran en el informe
+var timeout = time.Duration(1)*time.Second //timeout para conexiones 
 
 func SaveChunk (chunk []byte, name string){ //transforma el chunk en un archivo para guardar en almacenamiento acorde al nombre entregado
+	fmt.Println("Guardando chunk en memoria\nNombre del Chunk: "+name+"\n")
 	fileName := name //sacado del tutorial del enunciado
 	_, err := os.Create(fileName)
 	if err != nil {
@@ -45,6 +47,7 @@ func SaveChunk (chunk []byte, name string){ //transforma el chunk en un archivo 
 	ioutil.WriteFile(fileName, chunk, os.ModeAppend)
 }
 func SearchChunk (name string) (chunk []byte){ //busca el chunk solicitado en almacenamiento
+	fmt.Println("Buscando chunk en almacenamiento\nNombre: "+name)
 	newFileChunk, err := os.Open(name) //sacado del tutorial del enunciado
 	if err != nil {
 			fmt.Println(err)
@@ -61,9 +64,11 @@ func SearchChunk (name string) (chunk []byte){ //busca el chunk solicitado en al
 	chunkBufferBytes := make([]byte, chunkSize) 
 	reader := bufio.NewReader(newFileChunk) //traduce el archivo a un arreglo de bytes para ser enviado
 	reader.Read(chunkBufferBytes)
+	fmt.Println("Enviando Chunk\n")
 	return chunkBufferBytes //retorna el chunk en forma de bytes
 }
 func GenerarPropuesta (total int)([]int64){ //funcion que genera la propuesta inicial de los 3 datanodes conectados
+	fmt.Println("Generando Propuesta Inicial...")
 	var propuesta []int64
 	for i:=0;i<=total/3;i++{ //genera la propuesta para cada chunk en base al total/3, es decir por cada 3 chunks los distribuye entre los 3 datanodes
 		rand.Seed(time.Now().UnixNano())//genera una semilla random basada en el time de la maquina
@@ -86,9 +91,10 @@ func GenerarPropuesta (total int)([]int64){ //funcion que genera la propuesta in
 }
 
 func (s *server) Upload(ctx context.Context, msg *pb.UploadRequest) (*pb.UploadResponse, error) {//funcion que recibe el nombre y cantidad de chunks que tiene el archivo del cliente
+	fmt.Println("Recibiendo Archivo de cliente...\nNombre de Archivo:"+msg.GetNombre()+"\nCantidad de Partes:"+strconv.Itoa(int(msg.GetTotalchunks()))+"\nProcediendo a recibir partes...")
 	nombrearchivo=msg.GetNombre() //guarda el nombre
 	total=msg.GetTotalchunks() //guarda el total de chunks
-	c_mensajes = c_mensajes + 2
+	//c_mensajes = c_mensajes + 2
 	return &pb.UploadResponse{Resp : int64(0), }, nil
 }
 
@@ -106,13 +112,13 @@ func RicartyAgrawala()bool{
 
 		client := pb2.NewNodeServiceClient(conn)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
 		msg:= &pb2.RicandAgraRequest{Id: int64(id_node)} // generamos el mensaje con la propuesta
 
 		resp, err := client.RicandAgra(ctx, msg) // enviamos la propuesta y recibimos la respuesta
-		c_mensajes = c_mensajes + 2
+		//c_mensajes = c_mensajes + 2
 		if resp.GetResp() != "mensaje"{
 			if resp.GetId() > int64(id_node){
 				return false
@@ -125,16 +131,17 @@ func RicartyAgrawala()bool{
 
 
 func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) (*pb.UploadChunksResponse, error) { //funcion que guarda los chunks y cuando llegan todos genera la distribucion
-	fmt.Println(len(chunks))
-	fmt.Println("Recibido")
+	//mt.Println(len(chunks))
+	//fmt.Println("Recibido")
 	
 	if tipo_distribucion == "centralizado"{  // Logica cuando el algoritmo de distrib. es centralizado
 		
 		chunks=append(chunks,msg.GetChunk()) // Agregamos el chunk a nuestro arreglo
 
 		if int64(len(chunks))==total{ // Cuando llegan todos los chunks del archivo al datanode, realizamos propuesta
-			
+			fmt.Println("Recepción Completa de partes...")
 			for{
+				fmt.Println("Verificando estado de Namenode...")
 				conn, err := grpc.Dial(directions[0], grpc.WithInsecure())//nos conectamos al datanode a ver su estado
 				if err != nil {
 					log.Fatalln(err)
@@ -142,14 +149,17 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 				defer conn.Close()
 				client := pb2.NewNodeServiceClient(conn)
 
-				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), timeout)
 				defer cancel() // Con esta funcion generaremos la propuesta
 				msg:= &pb2.StatusRequest{Id: 1} // generamos el mensaje con la consulta de estado al namenode
 				resp, err := client.Status(ctx, msg)
-				c_mensajes = c_mensajes + 2
+				//c_mensajes = c_mensajes + 2
 				if resp.GetResp()==1{ //si esta libre, procedemos a seguir el algoritmo
+					fmt.Println("Namenode disponible...")
 					break
-				}//si no, volvemos a consultar si se encuentra disponible el namenode
+				}
+				fmt.Println("Namenode ocupado... Reiniciando solicitud...\n")
+				//si no, volvemos a consultar si se encuentra disponible el namenode
 			}	
 				/* GENERAR PROPUESTA*/
 			/* Primero, generamos la conexion con namenode*/
@@ -159,59 +169,68 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 			}
 			defer conn.Close()
 			client := pb2.NewNodeServiceClient(conn)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(),timeout)
 			defer cancel()
 			propuesta := GenerarPropuesta(int(total)) // Con esta funcion generaremos la propuesta
+			fmt.Println("Enviando propuesta a Namenode")		
 			msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo} // generamos el mensaje con la propuesta
 			resp, err := client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
-			c_mensajes = c_mensajes + 2
-			fmt.Println(resp.GetProp())
+			//c_mensajes = c_mensajes + 2
 			if resp.GetMsg() == false{  // cuando se rechaza la propuesta, la actualizamos con la propuesta recibida x namenode
+				fmt.Println("Propuesta Rechazada... Actualizando Propuesta")
 				propuesta = resp.GetProp()
+			}else{
+				fmt.Println("Propuesta Aceptada")
 			}
 			msg2:= &pb2.StatusRequest{Id: 2} // liberamos al datanode, ya que se reviso la propuesta y se procedera a distriburi
+			fmt.Println("Liberando Namenode...")
 			_, err=client.Status(ctx, msg2)
-			c_mensajes = c_mensajes + 2
+			//c_mensajes = c_mensajes + 2
 			if err != nil {
 				log.Fatalln(err)
 			}
-		/* GENERAR DISTRIBUCION*/
-		/* Leemos el arreglo de propuesta que tiene las designaciones de cada chunk que ira a cada datanode*/
-		for i,j :=range propuesta{
-			if this_datanode==datanode[j]{ //si el chunk corresponde al datanode local, simplemente se guarda
-				SaveChunk(chunks[i],nombrearchivo+"_"+strconv.Itoa(i)) // se guarda en almacenamiento el chunk
-				continue
+			/* GENERAR DISTRIBUCION*/
+			/* Leemos el arreglo de propuesta que tiene las designaciones de cada chunk que ira a cada datanode*/
+			fmt.Println("Iniciando Distribucion de Chunks...")
+			for i,j :=range propuesta{
+				if this_datanode==datanode[j]{ //si el chunk corresponde al datanode local, simplemente se guarda
+					fmt.Println("Guardando Parte "+strconv.Itoa(i)+" en datanode actual")
+					SaveChunk(chunks[i],nombrearchivo+"_"+strconv.Itoa(i)) // se guarda en almacenamiento el chunk
+					continue
+				}
+				// Procedemos a generar la conexion con el datanode a donde enviaremos el chunk
+				conn, err := grpc.Dial(datanode[j], grpc.WithInsecure())
+				if err != nil { //desconectar un nodo destino durante la distribucion producira un error y abortará todo lo anterior
+					fmt.Println("Proceso abortado, se ha desconectado el nodo durante la distribucion")
+					break
+				}
+				defer conn.Close()
+				client := pb2.NewNodeServiceClient(conn)
+				ctx, cancel := context.WithTimeout(context.Background(), timeout)
+				defer cancel()
+				fmt.Println("Enviando Parte "+strconv.Itoa(i)+" a datanode "+strconv.Itoa(int(j)+1)+"\n")
+				msg:= &pb2.DistribucionRequest{Chunk: chunks[i], Name: nombrearchivo+"_"+strconv.Itoa(i)}// Creamos el mensaje con el chunk correspondiente + el nombre del chunk 
+				_, err = client.Distribucion(ctx, msg)// Enviamos el chunk
+				//c_mensajes = c_mensajes + 2
+				if err != nil {
+					continue
+				}
 			}
-			// Procedemos a generar la conexion con el datanode a donde enviaremos el chunk
-			conn, err := grpc.Dial(datanode[j], grpc.WithInsecure())
-			if err != nil { //desconectar un nodo destino durante la distribucion producira un error y abortará todo lo anterior
-				fmt.Println("Proceso abortado, se ha desconectado el nodo durante la distribucion")
-				break
+			fmt.Println("Distribucion Completada\n\n")
+			chunks = [][]byte{}// Una vez realizada la distribucion, reiniciamos el arreglo donde guardamos los chunks
+			//c_mensajes = c_mensajes + 2
+			//mensaj := "El servidor guardo el archivo, num. de mensajes totales: " + strconv.Itoa(c_mensajes)
+			//c_mensajes = 0
+			return &pb.UploadChunksResponse{Resp : "subida completa" }, nil //Avisamos al cliente de que esta completa la subida y distribucion del archivo
 			}
-			defer conn.Close()
-			client := pb2.NewNodeServiceClient(conn)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			msg:= &pb2.DistribucionRequest{Chunk: chunks[i], Name: nombrearchivo+"_"+strconv.Itoa(i)}// Creamos el mensaje con el chunk correspondiente + el nombre del chunk 
-			_, err = client.Distribucion(ctx, msg)// Enviamos el chunk
-			c_mensajes = c_mensajes + 2
-			if err != nil {
-				continue
-			}
-		}
-		chunks = [][]byte{}// Una vez realizada la distribucion, reiniciamos el arreglo donde guardamos los chunks
-		c_mensajes = c_mensajes + 2
-		mensaj := "El servidor guardo el archivo, num. de mensajes totales: " + strconv.Itoa(c_mensajes)
-		c_mensajes = 0
-		return &pb.UploadChunksResponse{Resp : mensaj }, nil //Avisamos al cliente de que esta completa la subida y distribucion del archivo
-		}
-		c_mensajes = c_mensajes + 2
+		//c_mensajes = c_mensajes + 2
 		return &pb.UploadChunksResponse{Resp : "chunk recibido en el server", }, nil// Esto se envia cuando no se tienen todos los chunks del archivo
 
 		
 	}else if tipo_distribucion == "distribuido" {   // Logica cuando el algoritmo de distrib. es distribuido
 		chunks=append(chunks,msg.GetChunk()) // Agregamos el chunk a nuestro arreglo
 		if int64(len(chunks))==total{// Cuando llegan todos los chunks del archivo al datanode, realizamos propuesta
+			fmt.Println("Recepción Completa de partes...")
 			/* Logica de esto, es que si una propuesta se rechaza, pues hay que volver a realizar una
 			nueva propuesta, por lo que rompemos el segundo for que esta hecho para enviar la propuesta a cada
 			datanode y volvemos a realizarlo con una nueva propuesta, para eso usamos una variable booleana
@@ -223,15 +242,14 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 			de distribucion de chunks, puesto que si se rechaza una propuesta hay que generar una nueva y volver a enviar a los
 			demas datanodes esta nueva propuesta, por eso es que necesitabamos agregar un nuevo for mas (el "Proceso")
 			*/
-			
 			Proceso:
 			for{
-				fmt.Println(propuesta)
 				/* Esta funcion AllAlive la llamamos  por que ademas de poder comprobar si los nodos que implican la 
 				propuesta estan disponibles, actualiza el arreglo datanodestatus que nos indica los datanodes que estan vivos,
 				basicamente para esto la llamamos realmente aca
 				*/
-				AllAlive([]int64{})  
+				AllAlive([]int64{})
+				fmt.Println("Enviando Propuesta a datanodes")  
 				/* Primero, generamos la conexion con cada datanode*/
 				for i,dire:= range datanode{
 					
@@ -245,23 +263,23 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 					
 					conn, err := grpc.Dial(dire, grpc.WithInsecure()) // generamos conexion a un nodo especifico
 					if err != nil {
-						fmt.Println("i am moricido")
 						continue
 					}
 					defer conn.Close()
 
 					client := pb2.NewNodeServiceClient(conn)
 
-					ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), timeout)
 					defer cancel()
 
 					msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo} // generamos el mensaje con la propuesta 
 
 					resp, err := client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
-					c_mensajes = c_mensajes + 2
+					//c_mensajes = c_mensajes + 2
 					//estado := resp.GetMsg()
-					fmt.Println(resp.GetProp(),resp.GetMsg(),contador,dire)
+					//fmt.Println(resp.GetProp(),resp.GetMsg(),contador,dire)
 					if resp.GetMsg() == false{  // cuando se rechaza la propuesta, la actualizamos con la propuesta recibida x namenode	
+						fmt.Println("Propuesta rechazada...")
 						propuesta=GenerarPropuestaNueva(len(propuesta),TotalConectados()) // Generamos una nueva propuesta
 						contador = 0 // reiniciamos el contador
 						break
@@ -269,7 +287,6 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 						contador++ //Sumamos de que se logro un envio
 					}
 				}
-				fmt.Println(contador,TotalConectados())
 				// Si notamos que enviamos todos los mensajes a todos los nodos que estan conectados, pues estamos listos para el siguiente
 				// paso, por lo cual rompemos este Proceso
 				if int(contador)==TotalConectados(){ 
@@ -277,22 +294,21 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 				}
 				contador=0
 			}
-			fmt.Println(propuesta,"salí watcho")
 			//Enviar mensaje a namenode con la propuesta aceptada por nodos 
-
+			fmt.Println("Propuesta Aceptada")
 		
 			
 			//actualizamos esta variable que indica que estaremos contactando con namenode
 			ocupado = true
-			
+			fmt.Println("Actualizando estado: OCUPADO")
 			// Se usa el algoritmo de Ricart y Agrawala para pedir permisos de acceso a namenode
 			
 			for !RicartyAgrawala(){} 
 			/* Si se tiene aprobacion de los demas nodos para contactar namenode, procedera a contactarlo
 			en caso contrario, estara consultando constantemente a la autorizacion de los demas nodos*/
-		
+			fmt.Println("Enviando Propuesta a Namenode...")
 			// Contactamos con namenode 
-			conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure())
+			conn, err := grpc.Dial(directions[0], grpc.WithInsecure())
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -300,21 +316,21 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 
 			client := pb2.NewNodeServiceClient(conn)
 
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 
 			msg:= &pb2.PropuestaRequest{Prop: propuesta, Name: nombrearchivo} // enviamos propuesta a namenode para que la escriba
 
 			_, err = client.Propuesta(ctx, msg) // enviamos la propuesta y recibimos la respuesta
-			c_mensajes = c_mensajes + 2
+			//c_mensajes = c_mensajes + 2
 			ocupado = false // como ya terminamos de contactarnos con namenode, desactivamos esta variable
-
-
-
+			fmt.Println("Actualizando estado: LIBRE")
 			/* GENERAR DISTRIBUCION*/
 			/* Leemos el arrigo de propuesta que tiene las designaciones de cada chunk que ira a cada datanode*/
+			fmt.Println("Iniciando Distribucion de Chunks")
 			for i,j :=range propuesta{
 				if this_datanode==datanode[j]{ //claramente, si un chunk se debe quedar en este datanode, para que enviarlo XD
+					fmt.Println("Guardando Parte "+strconv.Itoa(i)+" en datanode actual")
 					SaveChunk(chunks[i],nombrearchivo+"_"+strconv.Itoa(i)) // Simplemente lo guardamos con la funcion savechunk
 					continue
 				}
@@ -328,39 +344,43 @@ func (s *server) UploadChunks(ctx context.Context, msg *pb.UploadChunksRequest) 
 		
 				client := pb2.NewNodeServiceClient(conn)
 		
-				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(),timeout)
 				defer cancel()
 				// Creamos el mensaje con el chunk correspondiente + el nombre del chunk 
+				fmt.Println("Enviando Parte "+strconv.Itoa(i)+" a datanode "+strconv.Itoa(int(j)+1)+"\n")
 				msg:= &pb2.DistribucionRequest{Chunk: chunks[i], Name: nombrearchivo+"_"+strconv.Itoa(i)}
 				
 				// Enviamos el chunk
 				_, err = client.Distribucion(ctx, msg)
-				c_mensajes = c_mensajes + 2
+				//c_mensajes = c_mensajes + 2
 				if err != nil {
 					continue
 				}
 			}
-
+			fmt.Println("Distribucion Completada\n\n")
 			chunks = [][]byte{}
 
-			c_mensajes = c_mensajes + 2
-			mensaj := "El servidor guardo el archivo, num. de mensajes totales: " + strconv.Itoa(c_mensajes)
-			c_mensajes = 0
-			return &pb.UploadChunksResponse{Resp : mensaj, }, nil //Avisamos de que estamos ok con la subida
+			//c_mensajes = c_mensajes + 2
+			//mensaj := "El servidor guardo el archivo, num. de mensajes totales: " + strconv.Itoa(c_mensajes)
+			//c_mensajes = 0
+			return &pb.UploadChunksResponse{Resp : "ok", }, nil //Avisamos de que estamos ok con la subida
 		}
 		// Este mensaje se envia cuando no hemos recibido todos los chunks de cliente
-		c_mensajes = c_mensajes + 2
+		//c_mensajes = c_mensajes + 2
 		return &pb.UploadChunksResponse{Resp : "chunk recibido en el server", }, nil 
 
 
 	} 
 	// En el caso de que el sistema no tenga claro el tipo de distribucion (la variable tipo_distribucion no tiene valor)
 	// entonces significa que algo esta fallando, avisamos de eso al cliente
-	c_mensajes = c_mensajes + 2
+	//c_mensajes = c_mensajes + 2
 	return &pb.UploadChunksResponse{Resp : "Fallo algo", }, nil
 }
 
 func (s *server) Alive(ctx context.Context, msg *pb2.AliveRequest) (*pb2.AliveResponse, error) {//responde que se encuentra en linea si le es solicitado
+	//c_mensajes = c_mensajes + 2
+	//fmt.Println("Cant. mensajes realizados aca: ",  c_mensajes)
+	//c_mensajes = 0
 	return &pb2.AliveResponse{Msg : "Im Alive, datanode", }, nil
 }
 
@@ -376,6 +396,7 @@ func TotalConectados()int{//funcion que calcula el numero total de conectados y 
 	return cont//retorna la cantidad
 }
 func GenerarPropuestaNueva (total int, conectados int)([]int64){//en modo centralizado genera una nueva propuesta basada en los conectados actualmente (si hay menos de 3)
+	fmt.Println("Generando nueva propuesta...")
 	var propuesta []int64 //nueva propuesta
 	for i:=0;i<=total/conectados;i++{ //genera la propuesta para cada chunk en base al total/total de conectados, es decir si hay dos conectados, lo hara por cada dos chunks
 		rand.Seed(time.Now().UnixNano())//genera una semilla random basada en el time de la maquina
@@ -436,7 +457,6 @@ func VerifProp(prop []int64)bool{ //funcion que verifica que en la propuesta gen
 }
 
 func AllAlive (prop []int64) (bool){//funcion que verifica los datanodes conectados, actualiza en memoria cuales lo estan y retorna falso si hay discrepancia con la lista de conectados enviada
-
 	for j,dire :=range datanode{
 		conn, err := grpc.Dial(dire, grpc.WithInsecure()) //inicia conexion con cada datanode
 		if err != nil {
@@ -445,36 +465,42 @@ func AllAlive (prop []int64) (bool){//funcion que verifica los datanodes conecta
 		}
 		defer conn.Close()
 		client := pb2.NewNodeServiceClient(conn)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		msg:= &pb2.AliveRequest{Msg: "Are u alive?"} //realiza la consulta al datanode
 		_, err = client.Alive(ctx, msg)
-		c_mensajes = c_mensajes + 2
+		//c_mensajes = c_mensajes + 2
 		if err != nil {
 			datanodestatus[j]=false
 			continue
 		}
 		datanodestatus[j]=true //actualiza la lista de estados
 	}
-	if reflect.DeepEqual(prop, []int64{}){//si los conectados actuales son los mismos ingresados retorna true
+	if reflect.DeepEqual(prop, []int64{}){//utilizado para actualizar estado de nodes
 		return true
 	}
 	if !VerifProp(prop){//si dentro de la propuesta hay un nodo desconectado retorna falso
+		fmt.Println("Error!...Propuesta no valida... Datanode desconectado detectado en propuesta")
 		return false
 	}
+	fmt.Println("Propuesta valida")
 	return true //retorna true si todo es valido
 }
 
 func (s *server) Propuesta(ctx context.Context, msg *pb2.PropuestaRequest) (*pb2.PropuestaResponse, error) {//recibe la propuesta de otro datanode en distribuido
+	fmt.Println("Propuesta Recibida...Inicializando Proceso de verificación de Propuesta...")
 	if AllAlive(msg.GetProp()) { //revisa que la propuesta sea valida en base a los conectados
+		fmt.Println("Aprobando Propuesta")
 		return &pb2.PropuestaResponse{Msg : true, Prop : []int64{}}, nil //envia true si lo es
 	} else {		
+		fmt.Println("Rechazando Propuesta")
 		return &pb2.PropuestaResponse{Msg : false, Prop : []int64{}}, nil //envia falso si la propuesta esta mala
 	}
 }
 
 
 func (s *server) Distribucion(ctx context.Context, msg *pb2.DistribucionRequest) (*pb2.DistribucionResponse, error) {//recibe el chunk a guardar en almacenamiento
+	fmt.Println("Chunk Recibido!")
 	SaveChunk(msg.GetChunk(),msg.GetName()) //guarda el chunk en almacenamiento con el nombre respectivo enviado desde otro datanode
 	return &pb2.DistribucionResponse{Resp : "",}, nil
 }
@@ -497,6 +523,7 @@ func (s *server) TypeDis(ctx context.Context, msg *pb.TypeRequest) (*pb.TypeResp
 	}else if msg.GetType()=="status"{ //funcion que notifica que se encuentra online el nodo
 		return &pb.TypeResponse{Resp: "online"}, nil
 	}else{//solo queda la posibilidad de que reciba por parte del cliente el algoritmo con el cual funcionara la maquina
+		fmt.Println("Recepcion de algoritmo de distribucion "+msg.GetType()+"\nAplicando Configuración...\nListo\n")
 		tipo_distribucion = msg.GetType()//actualiza el tipo de distribución con la cual funcionará el node
 	}
 	return &pb.TypeResponse{Resp: "" }, nil
@@ -528,6 +555,7 @@ func (s *server) Status(ctx context.Context, msg *pb2.StatusRequest) (*pb2.Statu
 	
 }
 func InicioTipo()bool{ //funcion de inicializacion para verificar si otras maquinas ya online poseen una distribucion implementada
+	fmt.Println("Revisando datanodes y namenode...")
 	initipo:= []bool{false,false}  // centralizado,distribuido
 	for _,dire :=range directions{ //revisa cada node
 		if dire==this_datanode{ //omite la consulta a si mismo
@@ -539,7 +567,7 @@ func InicioTipo()bool{ //funcion de inicializacion para verificar si otras maqui
 		}
 		defer conn.Close()
 		client := pb2.NewNodeServiceClient(conn)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		msg:= &pb2.StatusRequest{Id: 0} //realiza la consulta de estado
 		resp, err := client.Status(ctx, msg)
@@ -553,11 +581,14 @@ func InicioTipo()bool{ //funcion de inicializacion para verificar si otras maqui
 		}//2 no representa nada por lo que lo omite
 	}
 	if !initipo[0] && !initipo[1]{//si el arreglo queda vacio aun no hay un tipo de distribucion implementado por lo que no hace nada
+		fmt.Println("Algoritmo de Exclusión Mutua no detectado...\nEsperando configuracion de cliente...")
 		return true
 	}else if initipo[0] && !initipo[1]{//si detecta solo centralizado pone al node en modo centralizado
+		fmt.Println("Algoritmo de Exclusión Mutua Centralizada detectado...\nAplicando Configuración...\nListo\n")
 		tipo_distribucion="centralizado"
 		return true
 	}else if !initipo[0] && initipo[1]{//si detecta solo distribuido pone al node en modo centralizado
+		fmt.Println("Algoritmo de Exclusión Mutua Distribuida detectado...\nAplicando Configuración...\nListo\n")
 		tipo_distribucion="distribuido"
 		return true
 	}else{//si detecta ambas notifica el error y cierra el sistema
@@ -572,6 +603,7 @@ func main() {
 		log.Fatal("Error conectando: %v", err)
 	}
 	s := grpc.NewServer()
+	fmt.Println("INICIALIZANDO DATANODE 2...")
 	in:=InicioTipo()//verifica el estado de otras maquinas para actualizar de ser necesario el modo a centralizado o distribuido
 	if !in{//si hay un estado sin sentido cierra el sistema y notifica
 		return
