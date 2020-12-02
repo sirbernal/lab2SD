@@ -233,8 +233,13 @@ func menu2(tipo string){//Menu que se despliega luego de seleccionar el algoritm
 					var archivo string
 					fmt.Print("Ingrese nombre de archivo con su extension(ejemplo: archivo.pdf):") 
 					fmt.Scanln(&archivo) //guarda el nombre de su archivo incluida la extension
+					t := time.Now() // Se usara para medir el tiempo de ejecucion (inicial)
 					SubirArchivo(dataint-1,archivo) //llama a la funcion de subir archivo con el nodo seleccionado
+					t2 := time.Now() // Se usara para medir el tiempo de ejecucion (final)
+					def := t2.Sub(t) // obtenemos la resta de los tiempos de ejecucion
+					fmt.Println("tiempo de demora: ", def) // obtenemos el tiempo de ejecucion
 					continue Menu2 //vuelve al menu principal
+
 					} 
 			case "2":
 				VerifNodos() //actualiza el estado de los nodes

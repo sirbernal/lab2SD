@@ -146,7 +146,7 @@ func AllAlive () (bool){ //funcion que verifica si estan todos los datanodes con
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		msg:= &pb2.AliveRequest{Msg: "Are u alive?"} //realiza la consulta al datanode
-		client.Alive(ctx, msg)
+		_ , err = client.Alive(ctx, msg)
 		if err != nil {
 			datanodestatus[j]=false
 			continue
@@ -154,8 +154,10 @@ func AllAlive () (bool){ //funcion que verifica si estan todos los datanodes con
 		datanodestatus[j]=true //actualiza la lista de estados
 	}
 	if reflect.DeepEqual(datanodestatus,[]bool{true,true,true}){//si estan todos conectados retorna true
+		fmt.Println(datanodestatus)
 		return true
 	}else{
+		fmt.Println(datanodestatus)
 		return false
 	}
 }
