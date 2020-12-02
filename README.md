@@ -26,4 +26,11 @@ Se usó el lenguaje Go junto con RabbitMQ y gRPC para los envios de datos entre 
 #### Observaciones
 Namenode nunca debería morir, si no el sistema muere ya que este trabaja con datos en memoria.  
 No hicimos un filtro de duplicado a la hora de subir un mismo libro de nuevo al servidor.
-En informe esta explicado a grandes rasgos como funciona el sistema, pero el detalle a fondo esta en el propio codigo comentado
+En informe esta explicado a grandes rasgos como funciona el sistema, pero el detalle a fondo esta en el propio codigo comentado.
+Los archivos a subir en el sistema deben estar previamente almacenados en la carpeta cliente. Inicialmente se dejará subido un solo archivo llamado "ejemplo.pdf".
+Los archivos a descargar serán guardados en la carpeta cliente, en caso de descargar uno con el nombre de un archivo ya existente en la misma, este se sobrescribirá.
+
+#### Funcionamiento del sistema
+Al momento de inicializar el sistema se requiere que al menos un nodo este inicializado con el cliente, dado que este indicará el algoritmo con el cual funcionarán los demás.
+Ya teniendo en un nodo con el algoritmo implementado, el resto de nodos se acoplarán a este replicando la configuración, con lo cual, para implementar otro algoritmo se requiere que esten todos los nodos apagados.
+Cada vez que se inicie una nueva simulación se recomienda borrar los archivos generados en el anterior (chunks y registro) para evitar incongruencias en el sistema o corrupción de archivos
